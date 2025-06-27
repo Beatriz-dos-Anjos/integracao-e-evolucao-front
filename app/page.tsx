@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -198,7 +199,7 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Link href="/relatorios">
+          <Link href="/reports">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-purple-300">
               <CardHeader className="text-center">
                 <FileText className="w-12 h-12 mx-auto text-purple-600 mb-2" />

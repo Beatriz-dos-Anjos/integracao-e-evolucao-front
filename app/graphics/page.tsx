@@ -78,10 +78,9 @@ export default function GraficosPage() {
       // Simular análise de IA (em produção usaria o AI SDK real)
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      // Análise de tendências
+      // Análise de tendências - remover profitGrowth não usado
       const revenueGrowth = calculateGrowthRate(historicalData.map((d) => d.receitas))
       const expenseGrowth = calculateGrowthRate(historicalData.map((d) => d.despesas))
-      const profitGrowth = calculateGrowthRate(historicalData.map((d) => d.lucro))
 
       // Gerar insights baseados na análise
       const insights: AIInsight[] = [
@@ -120,17 +119,16 @@ export default function GraficosPage() {
       // Gerar previsões para os próximos 5 dias
       const futurePredictions: PredictionData[] = []
       for (let i = 1; i <= 5; i++) {
-        const baseDate = new Date(2025, 5, 24 + i) // 25/06 em diante
+        const baseDate = new Date(2025, 5, 24 + i)
         futurePredictions.push({
           date: `${baseDate.getDate().toString().padStart(2, "0")}/06`,
           receitas: predictNextValue(historicalData.map((d) => d.receitas)) + (Math.random() - 0.5) * 20,
           despesas: predictNextValue(historicalData.map((d) => d.despesas)) + (Math.random() - 0.5) * 15,
-          lucro: 0, // Será calculado
-          confidence: Math.max(60, 90 - i * 5), // Confiança diminui com o tempo
+          lucro: 0,
+          confidence: Math.max(60, 90 - i * 5),
         })
       }
 
-      // Calcular lucro previsto
       futurePredictions.forEach((pred) => {
         pred.lucro = pred.receitas - pred.despesas
       })
@@ -169,10 +167,10 @@ export default function GraficosPage() {
     return slope * n + intercept
   }
 
-  // Executar análise automaticamente
+  // Executar análise automaticamente com dependência correta
   useEffect(() => {
     analyzeWithAI()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Função para renderizar o gráfico com previsões
   const renderEnhancedChart = () => {
@@ -185,12 +183,12 @@ export default function GraficosPage() {
     const xStep = (chartWidth - padding * 2) / (allData.length - 1)
     const yScale = (chartHeight - padding * 2) / maxValue
 
-    const createPath = (dataKey: keyof (typeof historicalData)[0], isPrediction = false) => {
+    const createPath = (dataKey: "receitas" | "despesas" | "lucro", isPrediction = false) => {
       const dataToUse = isPrediction ? allData : historicalData
       return dataToUse
         .map((point, index) => {
           const x = padding + index * xStep
-          const y = chartHeight - padding - (point[dataKey] as number) * yScale
+          const y = chartHeight - padding - point[dataKey] * yScale
           return `${index === 0 ? "M" : "L"} ${x} ${y}`
         })
         .join(" ")
