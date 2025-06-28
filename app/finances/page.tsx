@@ -96,7 +96,7 @@ export default function FinanceiroPage() {
               <h1 className="text-3xl font-bold text-gray-800">Gestão Financeira</h1>
             </div>
           </div>
-          <Link href="/">
+          <Link href="/dashboard">
             <Button variant="outline" size="sm">
               <Home className="w-4 h-4 mr-2" />
               Dashboard
