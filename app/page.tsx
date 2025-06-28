@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
-  Briefcase,
   TrendingUp,
   DollarSign,
   AlertTriangle,
@@ -78,9 +77,9 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <Briefcase className="w-8 h-8 text-amber-600" />
-            <h1 className="text-3xl font-bold text-gray-800">Sistema de Gestão</h1>
+          <div className="flex items-center justify-center">
+            <img src="/logo.svg" alt="Logo" className="w-26 h-26" />
+            <h1 className="text-3xl font-bold text-gray-800">Micro Sistema Gerencial</h1>
           </div>
           <p className="text-gray-600">Controle seu negócio de forma simples e inteligente</p>
         </div>
@@ -140,7 +139,7 @@ export default function Dashboard() {
               <strong>Atenção: Estoque Baixo</strong>
               <div className="mt-2 space-y-1">
                 {lowStockProducts.map((product) => (
-                  <div key={product.id} className="flex justify-between items-center">
+                  <div key={product.id} className="flex justify-between items-center gap-8">
                     <span>{product.name}</span>
                     <Badge variant="destructive">
                       {product.quantity} restantes (mín: {product.minStock})
@@ -169,7 +168,7 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Link href="/financeiro">
+          <Link href="/finances">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-teal-300">
               <CardHeader className="text-center">
                 <DollarSign className="w-12 h-12 mx-auto text-teal-600 mb-2" />

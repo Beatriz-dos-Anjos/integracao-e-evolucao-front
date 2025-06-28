@@ -402,7 +402,7 @@ export default function GraficosPage() {
             <strong>Atenção: Estoque Baixo</strong>
             <div className="mt-2 space-y-1">
               {mockData.lowStockProducts.map((product, index) => (
-                <div key={index} className="flex justify-between items-center">
+                <div key={index} className="flex justify-between items-center gap-8">
                   <span>{product.name}</span>
                   <Badge variant="destructive">
                     {product.quantity} restantes (mín: {product.minStock})
@@ -464,13 +464,13 @@ export default function GraficosPage() {
 
         {/* Navigation Tabs */}
         <div className="flex gap-1 bg-white p-1 rounded-lg border">
-          <Link href="/estoque">
+          <Link href="/inventory">
             <Button variant="ghost" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
               Estoque
             </Button>
           </Link>
-          <Link href="/financeiro">
+          <Link href="/finances">
             <Button variant="ghost" className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               Financeiro
@@ -480,7 +480,7 @@ export default function GraficosPage() {
             <BarChart3 className="w-4 h-4" />
             Gráficos
           </Button>
-          <Link href="/relatorios">
+          <Link href="/reports">
             <Button variant="ghost" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Relatórios
