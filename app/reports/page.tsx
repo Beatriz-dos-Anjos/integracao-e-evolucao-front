@@ -267,16 +267,10 @@ export default function RelatoriosPage() {
 
         {/* Navigation Buttons */}
         <div className="flex justify-between">
-          <Link href="/">
+          <Link href="/dashboard">
             <Button variant="outline">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar ao Dashboard
-            </Button>
-          </Link>
-          <Link href="/">
-            <Button variant="outline">
-              <Home className="w-4 h-4 mr-2" />
-              Início
             </Button>
           </Link>
         </div>
