@@ -169,7 +169,7 @@ export default function Dashboard() {
             </Card>
           </Link>
 
-          <Link href="/financeiro">
+          <Link href="/finances">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-teal-300">
               <CardHeader className="text-center">
                 <DollarSign className="w-12 h-12 mx-auto text-teal-600 mb-2" />
