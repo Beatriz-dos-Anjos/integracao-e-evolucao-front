@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import {  useEffect } from "react"
+
 import { Package, Plus, Edit, Trash2, Lightbulb, ArrowLeft, Home } from "lucide-react"
+import api from "@/services/api"
 
 interface Product {
-  id: number
+  id?: number
   name: string
   category: string
   quantity: number
@@ -21,75 +24,100 @@ interface Product {
 }
 
 export default function EstoquePage() {
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: 1,
-      name: "Açaí 500ml",
-      category: "Bebidas",
-      quantity: 25,
-      minStock: 10,
-      purchasePrice: 3.5,
-      salePrice: 8.0,
-      margin: 129,
-    },
-    {
-      id: 2,
-      name: "Salgado Assado",
-      category: "Alimentação",
-      quantity: 30,
-      minStock: 15,
-      purchasePrice: 1.2,
-      salePrice: 3.5,
-      margin: 192,
-    },
-    {
-      id: 3,
-      name: "Água Mineral",
-      category: "Bebidas",
-      quantity: 5,
-      minStock: 15,
-      purchasePrice: 0.8,
-      salePrice: 2.0,
-      margin: 150,
-    },
-  ])
+  useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      const response = await api.get("/products")
+      const data = response.data
 
-  const [newProduct, setNewProduct] = useState({
+      const formattedProducts: Product[] = data.map((raw: any) => {
+        const purchase = Number(raw.preco_compra)
+        const sale = Number(raw.preco_venda)
+        const margin = purchase > 0 ? Math.round(((sale - purchase) / purchase) * 100) : 0
+
+        return {
+          id: raw.id,
+          name: raw.nome,
+          category: raw.categoria,
+          quantity: Number(raw.quantidade_estoque),
+          minStock: 0, // Se quiser, pode vir do backend depois
+          purchasePrice: purchase,
+          salePrice: sale,
+          margin,
+        }
+      })
+
+      setProducts(formattedProducts)
+    } catch (error) {
+      console.error("Erro ao buscar produtos:", error)
+    }
+  }
+
+  fetchProducts()
+}, [])
+
+  const [products, setProducts] = useState<Product[]>([])
+
+  const [newProduct, setNewProduct] = useState<Product>({
     name: "",
     category: "",
     quantity: 0,
     minStock: 0,
     purchasePrice: 0,
     salePrice: 0,
+    margin: 0,
   })
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   const totalCategories = new Set(products.map((p) => p.category)).size
-  const averageMargin = products.length > 0 ? products.reduce((sum, p) => sum + p.margin, 0) / products.length : 0
+  const averageMargin =
+    products.length > 0 ? products.reduce((sum, p) => sum + p.margin, 0) / products.length : 0
 
-  const addProduct = () => {
+  const addProduct = async () => {
     if (newProduct.name && newProduct.category) {
-      const margin =
-        newProduct.purchasePrice > 0
-          ? Math.round(((newProduct.salePrice - newProduct.purchasePrice) / newProduct.purchasePrice) * 100)
-          : 0
-
-      const product: Product = {
-        id: Date.now(),
-        ...newProduct,
-        margin,
+      const payload = {
+        nome: newProduct.name,
+        categoria: newProduct.category,
+        quantidade_estoque: newProduct.quantity,
+        preco_compra: newProduct.purchasePrice,
+        preco_venda: newProduct.salePrice,
       }
 
-      setProducts([...products, product])
-      setNewProduct({
-        name: "",
-        category: "",
-        quantity: 0,
-        minStock: 0,
-        purchasePrice: 0,
-        salePrice: 0,
-      })
+      try {
+        const response = await api.post("/products/", payload)
+        const raw = response.data
+
+       const addedProduct: Product = {
+  id: raw.id,
+  name: raw.nome,
+  category: raw.categoria,
+  quantity: Number(raw.quantidade_estoque),
+  minStock: newProduct.minStock,
+  purchasePrice: Number(raw.preco_compra),
+  salePrice: Number(raw.preco_venda),
+  margin:
+    Number(raw.preco_compra) > 0
+      ? Math.round(
+          ((Number(raw.preco_venda) - Number(raw.preco_compra)) / Number(raw.preco_compra)) * 100
+        )
+      : 0,
+}
+
+
+        setProducts([...products, addedProduct])
+        setNewProduct({
+          name: "",
+          category: "",
+          quantity: 0,
+          minStock: 0,
+          purchasePrice: 0,
+          salePrice: 0,
+          margin: 0,
+        })
+      } catch (error) {
+        console.error("Erro ao adicionar produto:", error)
+      }
     }
   }
 
@@ -97,10 +125,16 @@ export default function EstoquePage() {
     if (editingProduct) {
       const margin =
         editingProduct.purchasePrice > 0
-          ? Math.round(((editingProduct.salePrice - editingProduct.purchasePrice) / editingProduct.purchasePrice) * 100)
+          ? Math.round(
+              ((editingProduct.salePrice - editingProduct.purchasePrice) /
+                editingProduct.purchasePrice) *
+                100
+            )
           : 0
 
-      setProducts(products.map((p) => (p.id === editingProduct.id ? { ...editingProduct, margin } : p)))
+      setProducts(
+        products.map((p) => (p.id === editingProduct.id ? { ...editingProduct, margin } : p))
+      )
       setEditingProduct(null)
     }
   }
@@ -112,7 +146,6 @@ export default function EstoquePage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header with Navigation */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/">
@@ -135,7 +168,6 @@ export default function EstoquePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Add Product Form */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
@@ -213,8 +245,14 @@ export default function EstoquePage() {
                       value={editingProduct ? editingProduct.purchasePrice : newProduct.purchasePrice}
                       onChange={(e) =>
                         editingProduct
-                          ? setEditingProduct({ ...editingProduct, purchasePrice: Number(e.target.value) })
-                          : setNewProduct({ ...newProduct, purchasePrice: Number(e.target.value) })
+                          ? setEditingProduct({
+                              ...editingProduct,
+                              purchasePrice: Number(e.target.value),
+                            })
+                          : setNewProduct({
+                              ...newProduct,
+                              purchasePrice: Number(e.target.value),
+                            })
                       }
                     />
                   </div>
@@ -228,8 +266,14 @@ export default function EstoquePage() {
                       value={editingProduct ? editingProduct.salePrice : newProduct.salePrice}
                       onChange={(e) =>
                         editingProduct
-                          ? setEditingProduct({ ...editingProduct, salePrice: Number(e.target.value) })
-                          : setNewProduct({ ...newProduct, salePrice: Number(e.target.value) })
+                          ? setEditingProduct({
+                              ...editingProduct,
+                              salePrice: Number(e.target.value),
+                            })
+                          : setNewProduct({
+                              ...newProduct,
+                              salePrice: Number(e.target.value),
+                            })
                       }
                     />
                   </div>
@@ -252,7 +296,6 @@ export default function EstoquePage() {
             </Card>
           </div>
 
-          {/* Quick Summary */}
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -288,7 +331,6 @@ export default function EstoquePage() {
           </div>
         </div>
 
-        {/* Products List */}
         <Card>
           <CardHeader>
             <CardTitle>Produtos em Estoque</CardTitle>
@@ -304,7 +346,9 @@ export default function EstoquePage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-gray-900">{product.name}</h3>
-                      {product.quantity <= product.minStock && <Badge variant="destructive">Estoque Baixo</Badge>}
+                      {product.quantity <= product.minStock && (
+                        <Badge variant="destructive">Estoque Baixo</Badge>
+                      )}
                     </div>
                     <p className="text-sm text-gray-500">{product.category}</p>
                   </div>
@@ -315,11 +359,15 @@ export default function EstoquePage() {
                       <div className="text-gray-500">Qtd</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-medium text-red-600">R$ {product.purchasePrice.toFixed(2)}</div>
+                      <div className="font-medium text-red-600">
+                        R$ {product.purchasePrice.toFixed(2)}
+                      </div>
                       <div className="text-gray-500">Compra</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-medium text-green-600">R$ {product.salePrice.toFixed(2)}</div>
+                      <div className="font-medium text-green-600">
+                        R$ {product.salePrice.toFixed(2)}
+                      </div>
                       <div className="text-gray-500">Venda</div>
                     </div>
                     <div className="text-center">
@@ -330,7 +378,7 @@ export default function EstoquePage() {
                       <Button size="sm" variant="outline" onClick={() => setEditingProduct(product)}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => deleteProduct(product.id)}>
+                      <Button size="sm" variant="outline" onClick={() => deleteProduct(product.id!)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
