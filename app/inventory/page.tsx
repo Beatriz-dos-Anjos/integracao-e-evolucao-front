@@ -30,6 +30,7 @@ export default function EstoquePage() {
       const response = await api.get("/products")
       const data = response.data
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const formattedProducts: Product[] = data.map((raw: any) => {
         const purchase = Number(raw.preco_compra)
         const sale = Number(raw.preco_venda)
@@ -141,6 +142,13 @@ export default function EstoquePage() {
 
   const deleteProduct = (id: number) => {
     setProducts(products.filter((p) => p.id !== id))
+    api.delete(`/products/${id}`)
+      .then(() => {
+        console.log("Produto deletado com sucesso")
+      })
+      .catch((error) => {
+        console.error("Erro ao deletar produto:", error)
+      })
   }
 
   return (
