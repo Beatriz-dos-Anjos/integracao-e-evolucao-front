@@ -6,8 +6,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { UserPlus, Eye, EyeOff, Store } from "lucide-react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Eye, EyeOff } from "lucide-react"
+import Image from "next/image"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -67,7 +68,7 @@ export default function RegisterPage() {
         <Card className="shadow-xl border-petrol-blue/20">
           <CardHeader className="text-center bg-petrol-blue/5">
             <div className="flex justify-center mb-4">
-              <img src="/logo.svg" alt="Logo" className="w-36 h-15" />
+              <Image src="/logo.svg" alt="Logo" width={144} height={60} />
             </div>
           </CardHeader>
           <CardContent className="p-6">

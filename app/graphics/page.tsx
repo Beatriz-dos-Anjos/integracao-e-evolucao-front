@@ -15,7 +15,6 @@ import {
   BarChart3,
   FileText,
   ArrowLeft,
-  Home,
   Brain,
   Loader2,
   Target,

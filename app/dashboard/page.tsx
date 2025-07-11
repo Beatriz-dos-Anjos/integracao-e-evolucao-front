@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -54,7 +55,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-4">
-            <img src="/logo.svg" alt="Logo" className="w-26 h-26" />
+            <Image src="/logo.svg" alt="Logo" width={144} height={60} />
             <h1 className="text-3xl font-bold text-gray-800">Micro Sistema Gerencial</h1>
           </div>
           <p className="text-gray-600">Controle seu negócio de forma simples e inteligente</p>

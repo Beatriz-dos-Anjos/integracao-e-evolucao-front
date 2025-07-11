@@ -12,7 +12,6 @@ import {
   BarChart3,
   FileText,
   ArrowLeft,
-  Home,
 } from "lucide-react"
 
 export default function RelatoriosPage() {
