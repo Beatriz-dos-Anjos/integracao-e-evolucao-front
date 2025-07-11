@@ -42,7 +42,7 @@ export default function EstoquePage() {
           name: raw.nome,
           category: raw.categoria,
           quantity: Number(raw.quantidade_estoque),
-          minStock: 0, // Se quiser, pode vir do backend depois
+          minStock: 0, 
           purchasePrice: purchase,
           salePrice: sale,
           margin,
@@ -192,7 +192,7 @@ const deleteProduct = (id: number) => {
               <h1 className="text-3xl font-bold text-gray-800">Gestão de Estoque</h1>
             </div>
           </div>
-          <Link href="/">
+          <Link href="/dashboard">
             <Button variant="outline" size="sm">
               <Home className="w-4 h-4 mr-2" />
               Dashboard
