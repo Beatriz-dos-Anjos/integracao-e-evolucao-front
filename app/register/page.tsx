@@ -69,8 +69,8 @@ export default function RegisterPage() {
 
       alert("Cadastro realizado com sucesso!")
       router.push("/login")
-    } catch (error: any) {
-      const msg = error.response?.data?.error || "Erro ao cadastrar"
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Erro ao cadastrar"
       alert(msg)
     } finally {
       setLoading(false)
