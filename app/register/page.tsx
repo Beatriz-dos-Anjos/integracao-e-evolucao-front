@@ -136,7 +136,7 @@ export default function RegisterPage() {
   )
 }
 
-function InputGroup({ label, name, value, onChange, type = "text" }: any) {
+function InputGroup({ label, name, value, onChange, type = "text" }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; type?: string }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
@@ -145,7 +145,7 @@ function InputGroup({ label, name, value, onChange, type = "text" }: any) {
   )
 }
 
-function PasswordInput({ label, name, value, show, toggleShow, onChange }: any) {
+function PasswordInput({ label, name, value, show, toggleShow, onChange }: { label: string; name: string; value: string; show: boolean; toggleShow: (name: string) => void; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
@@ -153,9 +153,9 @@ function PasswordInput({ label, name, value, show, toggleShow, onChange }: any) 
         <Input
           id={name}
           name={name}
-          type={show ? "text" : "password"}
           value={value}
           onChange={onChange}
+          type={show ? "text" : "password"}
           className="pr-10"
           required
         />

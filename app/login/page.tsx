@@ -36,8 +36,8 @@ export default function LoginPage() {
 
       localStorage.setItem("token", response.data.token)
       router.push("/dashboard")
-    } catch (error: any) {
-      const msg = error.response?.data?.error || "Erro ao fazer login"
+    } catch (error: unknown) {
+      const msg = (error as any)?.response?.data?.error || "Erro ao fazer login"
       alert(msg)
     } finally {
       setLoading(false)
