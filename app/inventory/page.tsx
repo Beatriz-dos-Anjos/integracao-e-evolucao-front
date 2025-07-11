@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import {  useEffect } from "react"
+import { toast } from "sonner"
 
 import { Package, Plus, Edit, Trash2, Lightbulb, ArrowLeft, Home } from "lucide-react"
 import api from "@/services/api"
@@ -122,34 +123,58 @@ export default function EstoquePage() {
     }
   }
 
-  const updateProduct = () => {
-    if (editingProduct) {
-      const margin =
-        editingProduct.purchasePrice > 0
-          ? Math.round(
-              ((editingProduct.salePrice - editingProduct.purchasePrice) /
-                editingProduct.purchasePrice) *
-                100
-            )
-          : 0
-
-      setProducts(
-        products.map((p) => (p.id === editingProduct.id ? { ...editingProduct, margin } : p))
-      )
+const updateProduct = () => {
+  if (editingProduct) {
+    if (editingProduct.quantity === 0) {
+      deleteProduct(editingProduct.id!)
+      toast.warning("Produto removido por estar com quantidade 0.")
       setEditingProduct(null)
+      return
     }
-  }
 
-  const deleteProduct = (id: number) => {
-    setProducts(products.filter((p) => p.id !== id))
-    api.delete(`/products/${id}`)
+    const margin =
+      editingProduct.purchasePrice > 0
+        ? Math.round(
+            ((editingProduct.salePrice - editingProduct.purchasePrice) /
+              editingProduct.purchasePrice) * 100
+          )
+        : 0
+
+    api
+      .put(`/products/${editingProduct.id}`, {
+        nome: editingProduct.name,
+        categoria: editingProduct.category,
+        quantidade_estoque: editingProduct.quantity,
+        preco_compra: editingProduct.purchasePrice,
+        preco_venda: editingProduct.salePrice,
+      })
       .then(() => {
-        console.log("Produto deletado com sucesso")
+        toast.success("Produto atualizado com sucesso!")
       })
       .catch((error) => {
-        console.error("Erro ao deletar produto:", error)
+        toast.error("Erro ao atualizar produto.")
+        console.error("Erro ao atualizar produto:", error)
       })
+
+    setProducts(
+      products.map((p) => (p.id === editingProduct.id ? { ...editingProduct, margin } : p))
+    )
+    setEditingProduct(null)
   }
+}
+
+
+const deleteProduct = (id: number) => {
+  setProducts(products.filter((p) => p.id !== id))
+  api.delete(`/products/${id}`)
+    .then(() => {
+      toast.success("Produto deletado com sucesso!")
+    })
+    .catch((error) => {
+      toast.error("Erro ao deletar produto.")
+      console.error("Erro ao deletar produto:", error)
+    })
+}
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
