@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
+import { MaskedInput } from "@/components/ui/inputMask"
 import api from "@/services/api"
 
 export default function RegisterPage() {
@@ -35,6 +36,10 @@ export default function RegisterPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleMaskedChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -93,7 +98,18 @@ export default function RegisterPage() {
           <CardContent className="p-6">
             <form onSubmit={handleRegister} className="space-y-4">
               <InputGroup label="Nome completo" name="fullName" value={formData.fullName} onChange={handleInputChange} />
-              <InputGroup label="CPF" name="cpf" value={formData.cpf} onChange={handleInputChange} />
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF</Label>
+                <MaskedInput
+                  id="cpf"
+                  name="cpf"
+                  mask="000.000.000-00"
+                  placeholder="000.000.000-00"
+                  value={formData.cpf}
+                  onAccept={(value) => handleMaskedChange("cpf", value)}
+                  required
+                />
+              </div>
               <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
               <InputGroup label="Data de nascimento" name="birthDate" type="date" value={formData.birthDate} onChange={handleInputChange} />
               <InputGroup label="Rua" name="street" value={formData.street} onChange={handleInputChange} />

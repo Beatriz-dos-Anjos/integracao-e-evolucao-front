@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { MaskedInput } from "@/components/ui/inputMask"
 import Image from "next/image"
 import api from "@/services/api"
 
@@ -14,6 +15,10 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ cpf: "", password: "" })
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  const handleMaskedChange = (value: string) => {
+    setFormData((prev) => ({ ...prev, cpf: value }))
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -57,13 +62,13 @@ export default function LoginPage() {
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="cpf">CPF</Label>
-                <Input
+                <MaskedInput
                   id="cpf"
                   name="cpf"
-                  type="text"
-                  placeholder="000.000.000-00"
+                  mask="000.000.000-00"
                   value={formData.cpf}
-                  onChange={handleInputChange}
+                  onAccept={handleMaskedChange}
+                  placeholder="000.000.000-00"
                   required
                 />
               </div>
