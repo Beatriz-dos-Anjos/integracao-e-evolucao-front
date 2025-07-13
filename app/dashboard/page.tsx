@@ -5,6 +5,7 @@ import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { User } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   TrendingUp,
@@ -60,7 +61,15 @@ export default function Dashboard() {
           </div>
           <p className="text-gray-600">Controle seu negócio de forma simples e inteligente</p>
         </div>
+        <div className="flex items-center justify-center gap-4">
+ <Link href={`/my-account/1`} className="ml-auto">
 
+              <Button variant="outline" size="sm">
+                <User className="w-4 h-4 mr-2" />
+                Minha Conta
+              </Button>
+            </Link>
+            </div>
         {/* Dashboard Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-slate-600 text-white">
