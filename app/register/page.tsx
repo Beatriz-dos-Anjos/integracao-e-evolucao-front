@@ -9,17 +9,20 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
+import { MaskedInput } from "@/components/ui/inputMask"
 import api from "@/services/api"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    businessName: "",
-    ownerName: "",
-    cnpj: "",
+    fullName: "",
     cpf: "",
-    email: "",
     password: "",
     confirmPassword: "",
+    birthDate: "",
+    street: "",
+    city: "",
+    neighborhood: "",
+    country: "",
   })
 
   const [showPasswordFields, setShowPasswordFields] = useState({
@@ -32,6 +35,10 @@ export default function RegisterPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleMaskedChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -56,21 +63,21 @@ export default function RegisterPage() {
       }
 
       await api.post("/auth/register", {
-        nome: formData.ownerName,
+        nome: formData.fullName,
         cpf: formData.cpf,
-        email: formData.email,
         password: formData.password,
-        data_nascimento: "2000-01-01",
-        rua: "Rua Exemplo",
-        cidade: "Cidade",
-        bairro: "Bairro",
-        pais: "Brasil",
+        data_nascimento: formData.birthDate,
+        rua: formData.street,
+        cidade: formData.city,
+        bairro: formData.neighborhood,
+        pais: formData.country,
       })
 
       alert("Cadastro realizado com sucesso!")
       router.push("/login")
     } catch (error: unknown) {
-      const msg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Erro ao cadastrar"
+      const msg =
+        (error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Erro ao cadastrar"
       alert(msg)
     } finally {
       setLoading(false)
@@ -88,11 +95,24 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleRegister} className="space-y-4">
-              <InputGroup label="Nome da empresa" name="businessName" value={formData.businessName} onChange={handleInputChange} />
-              <InputGroup label="Nome do empreendedor" name="ownerName" value={formData.ownerName} onChange={handleInputChange} />
-              <InputGroup label="CNPJ" name="cnpj" value={formData.cnpj} onChange={handleInputChange} />
-              <InputGroup label="CPF" name="cpf" value={formData.cpf} onChange={handleInputChange} />
-              <InputGroup label="Email" name="email" type="email" value={formData.email} onChange={handleInputChange} />
+              <InputGroup label="Nome completo" name="fullName" value={formData.fullName} onChange={handleInputChange} />
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF</Label>
+                <MaskedInput
+                  id="cpf"
+                  name="cpf"
+                  mask="000.000.000-00"
+                  placeholder="000.000.000-00"
+                  value={formData.cpf}
+                  onAccept={(value) => handleMaskedChange("cpf", value)}
+                  required
+                />
+              </div>
+              <InputGroup label="Data de nascimento" name="birthDate" type="date" value={formData.birthDate} onChange={handleInputChange} />
+              <InputGroup label="Rua" name="street" value={formData.street} onChange={handleInputChange} />
+              <InputGroup label="Cidade" name="city" value={formData.city} onChange={handleInputChange} />
+              <InputGroup label="Bairro" name="neighborhood" value={formData.neighborhood} onChange={handleInputChange} />
+              <InputGroup label="País" name="country" value={formData.country} onChange={handleInputChange} />
 
               <PasswordInput
                 label="Senha"
@@ -117,7 +137,7 @@ export default function RegisterPage() {
                 className="w-full bg-[#004C5F] hover:bg-[#003C4B] text-white"
                 disabled={loading}
               >
-                {loading ? "Cadastrando..." : "Registre-se"}
+                {loading ? "Cadastrando..." : "Registrar"}
               </Button>
             </form>
 
@@ -136,7 +156,19 @@ export default function RegisterPage() {
   )
 }
 
-function InputGroup({ label, name, value, onChange, type = "text" }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; type?: string }) {
+function InputGroup({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string
+  name: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  type?: string
+}) {
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
@@ -145,7 +177,21 @@ function InputGroup({ label, name, value, onChange, type = "text" }: { label: st
   )
 }
 
-function PasswordInput({ label, name, value, show, toggleShow, onChange }: { label: string; name: string; value: string; show: boolean; toggleShow: (name: string) => void; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+function PasswordInput({
+  label,
+  name,
+  value,
+  show,
+  toggleShow,
+  onChange,
+}: {
+  label: string
+  name: string
+  value: string
+  show: boolean
+  toggleShow: (name: string) => void
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+}) {
   return (
     <div className="space-y-2">
       <Label htmlFor={name}>{label}</Label>
