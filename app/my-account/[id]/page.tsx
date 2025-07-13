@@ -1,13 +1,15 @@
-// app/my-account/[id]/page.tsx
+/* eslint-disable react/jsx-no-undef */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
-
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
+import Link from "next/link"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import Link from "next/link"
 import {
   User,
   MapPin,
@@ -17,17 +19,17 @@ import {
   EyeOff,
   Loader2,
   AlertTriangle,
-  CheckCircle, // Added for success message icon
+  CheckCircle,
+  LogOut,
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import api from "@/services/api"
 
-// Interface for user form data (ensure this matches your backend's expected PUT payload)
 interface UserFormData {
   id: string
   nome: string
   cpf: string
-  password?: string // Optional, only send if user wants to change it
+  password?: string 
   data_nascimento: string
   rua: string
   cidade: string
@@ -35,9 +37,9 @@ interface UserFormData {
   pais: string
 }
 
-const MinhaConta = () => {
+const MyAccount = () => {
   const params = useParams()
-  const userId = params.id as string
+  const userId = params?.id as string
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -56,8 +58,7 @@ const MinhaConta = () => {
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Fetch user data on component mount and when userId changes
-  useEffect(() => {
+useEffect(() => {
     const fetchUserData = async () => {
       if (!userId) {
         setError("ID do usuário não fornecido na URL.")
@@ -67,19 +68,18 @@ const MinhaConta = () => {
 
       setLoading(true)
       setError(null)
-      setSuccessMessage(null) // Clear messages on new fetch
+      setSuccessMessage(null) 
 
       try {
         console.log(`Buscando dados do usuário: ${userId}`)
         const response = await api.get(`/users/${userId}`)
 
         if (response.data) {
-          // Map backend data to form state, ensuring all fields are present
           setFormData({
-            id: String(response.data.id || userId), // Fallback to userId from params
+            id: String(response.data.id || userId), 
             nome: response.data.nome || "",
             cpf: response.data.cpf || "",
-            password: "", // Always clear password field for security
+            password: "", 
             data_nascimento: response.data.data_nascimento || "",
             rua: response.data.rua || "",
             cidade: response.data.cidade || "",
@@ -98,18 +98,15 @@ const MinhaConta = () => {
               err.response.data.message || "Não foi possível carregar os dados do usuário."
             }`
           )
-        } else if (err.request) {
-          setError("Erro de rede: Não foi possível conectar ao servidor para carregar dados.")
-        } else {
-          setError("Erro desconhecido ao carregar dados do usuário.")
-        }
+        } 
       } finally {
         setLoading(false)
       }
     }
 
     fetchUserData()
-  }, [userId]) // Depend on userId to refetch if the ID in the URL changes
+  }, [userId]) 
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -119,323 +116,308 @@ const MinhaConta = () => {
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError(null)
-    setSuccessMessage(null) // Clear previous success/error messages
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setSaving(true)
+  setError(null)
+  setSuccessMessage(null)
 
-    try {
-      console.log("Dados do formulário para envio (antes da filtragem):", formData)
-
-      // Create an object with only the data that should be sent to the backend
-      const dataToSend: Partial<UserFormData> = {
-        nome: formData.nome,
-        cpf: formData.cpf,
-        data_nascimento: formData.data_nascimento,
-        rua: formData.rua,
-        cidade: formData.cidade,
-        bairro: formData.bairro,
-        pais: formData.pais,
-      }
-
-      // Only include password if it's not empty, indicating user wants to change it
-      if (formData.password) {
-        dataToSend.password = formData.password
-      }
-
-      console.log("Dados do formulário para envio (após filtragem):", dataToSend)
-
-      const response = await api.put(`/users/${userId}`, dataToSend)
-      console.log("Resposta da API:", response.data)
-      setSuccessMessage("Informações salvas com sucesso!")
-
-      // Clear the password field after saving, regardless of success
-      setFormData((prev) => ({ ...prev, password: "" }))
-    } catch (err: any) {
-      console.error("Erro ao salvar alterações:", err)
-      if (err.response) {
-        setError(
-          `Erro ao salvar: ${err.response.status} - ${
-            err.response.data.message || "Não foi possível salvar as alterações."
-          }`
-        )
-      } else if (err.request) {
-        setError("Erro de rede: Não foi possível conectar ao servidor para salvar dados.")
-      } else {
-        setError("Erro desconhecido ao salvar alterações.")
-      }
-    } finally {
-      setSaving(false)
+  try {
+    const dataToSend: Partial<UserFormData> = {
+      nome: formData.nome,
+      cpf: formData.cpf,
+      data_nascimento: formData.data_nascimento,
+      rua: formData.rua,
+      cidade: formData.cidade,
+      bairro: formData.bairro,
+      pais: formData.pais,
     }
+
+    if (formData.password) {
+      dataToSend.password = formData.password
+    }
+
+    const response = await api.put(`/users/${userId}`, dataToSend)
+
+    console.log("Resposta da API:", response.data)
+    setSuccessMessage("Informações salvas com sucesso!")
+    setFormData((prev) => ({ ...prev, password: "" }))
+  } catch (err: any) {
+    console.error("Erro ao salvar alterações:", err)
+  } finally {
+    setSaving(false)
+  }
+}
+
+
+  const handleLogout = () => {
+    localStorage.removeItem("token")
+    window.location.href = "/"
   }
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
-        <p className="text-gray-600">Carregando dados do usuário...</p>
-      </div>
-    )
-  }
-
-  // Error state when no data could be loaded at all
-  if (error && !formData.nome) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
-        <Alert className="border-red-200 bg-red-50 max-w-md mb-4">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
-            <strong>Erro:</strong> {error}
-          </AlertDescription>
-        </Alert>
-        <Link href="/dashboard">
-          <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Dashboard
-          </Button>
-        </Link>
-      </div>
-    )
-  }
-
+  
   return (
-    <div className="min-h-screen bg-gray-50 p-6 font-sans">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Cabeçalho */}
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="mr-auto">
-            <Button variant="outline" size="sm" className="rounded-md shadow-sm hover:bg-gray-100">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Dashboard
+    <div className="min-h-screen bg-gradient-account">
+      <div className="container mx-auto max-w-4xl px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Voltar ao Dashboard
+              </Button>
+            </Link>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={handleLogout}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
             </Button>
-          </Link>
-          <div className="flex items-center gap-4">
-            <div className="bg-black text-white px-4 py-2 rounded-md font-bold text-lg shadow-md">
-              MSG
+          </div>
+          
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-bold text-foreground">Minha Conta</h1>
+            <div className="flex justify-center mb-4">
+              <Image src="/logo.svg" alt="Logo" width={154} height={60} />
             </div>
-            <h1 className="text-3xl font-bold text-gray-800">Minha Conta</h1>
+            <p className="text-muted-foreground text-lg">
+              Gerencie suas informações pessoais
+              {formData.nome && <span className="font-medium"> - {formData.nome}</span>}
+            </p>
+
           </div>
         </div>
 
-        <div className="text-center">
-          <p className="text-gray-600">
-            Gerencie suas informações pessoais
-            {formData.nome && <span className="font-medium">- {formData.nome}</span>}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">ID do usuário: {userId}</p>
+        <div className="space-y-6">
+          <Card className="bg-gradient-card shadow-account-card border-0">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl text-foreground">
+                <div className="p-2 bg-account-primary/10 rounded-lg">
+                  <User className="h-5 w-5 text-account-primary" />
+                </div>
+                Informações Pessoais
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome" className="text-sm font-medium text-foreground">
+                      Nome Completo
+                    </Label>
+                    <Input
+                      id="nome"
+                      name="nome"
+                      type="text"
+                      value={formData.nome}
+                      onChange={handleInputChange}
+                      required
+                      className="h-11 border-border/50 focus:border-account-primary focus:ring-account-primary/20"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf" className="text-sm font-medium text-foreground">
+                      CPF
+                    </Label>
+                    <Input
+                      id="cpf"
+                      name="cpf"
+                      type="text"
+                      value={formData.cpf}
+                      onChange={handleInputChange}
+                      required
+                      disabled
+                      className="h-11 bg-muted/30 border-border/30 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="data_nascimento" className="text-sm font-medium text-foreground">
+                      Data de Nascimento
+                    </Label>
+                    <Input
+                      id="data_nascimento"
+                      name="data_nascimento"
+                      type="date"
+                      value={formData.data_nascimento}
+                      onChange={handleInputChange}
+                      required
+                      className="h-11 border-border/50 focus:border-account-primary focus:ring-account-primary/20"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                      Nova Senha
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password || ""}
+                        onChange={handleInputChange}
+                        placeholder="Digite uma nova senha"
+                        className="h-11 border-border/50 focus:border-account-primary focus:ring-account-primary/20 pr-12"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1 h-9 w-9 p-0"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Deixe em branco para manter a senha atual
+                    </p>
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-card shadow-account-card border-0">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl text-foreground">
+                <div className="p-2 bg-account-primary/10 rounded-lg">
+                  <MapPin className="h-5 w-5 text-account-primary" />
+                </div>
+                Endereço
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="rua" className="text-sm font-medium text-foreground">
+                    Rua
+                  </Label>
+                  <Input
+                    id="rua"
+                    name="rua"
+                    type="text"
+                    value={formData.rua}
+                    onChange={handleInputChange}
+                    required
+                    className="h-11 border-border/50 focus:border-account-primary focus:ring-account-primary/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bairro" className="text-sm font-medium text-foreground">
+                    Bairro
+                  </Label>
+                  <Input
+                    id="bairro"
+                    name="bairro"
+                    type="text"
+                    value={formData.bairro}
+                    onChange={handleInputChange}
+                    required
+                    className="h-11 border-border/50 focus:border-account-primary focus:ring-account-primary/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cidade" className="text-sm font-medium text-foreground">
+                    Cidade
+                  </Label>
+                  <Input
+                    id="cidade"
+                    name="cidade"
+                    type="text"
+                    value={formData.cidade}
+                    onChange={handleInputChange}
+                    required
+                    className="h-11 border-border/50 focus:border-account-primary focus:ring-account-primary/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pais" className="text-sm font-medium text-foreground">
+                    País
+                  </Label>
+                  <Input
+                    id="pais"
+                    name="pais"
+                    type="text"
+                    value={formData.pais}
+                    onChange={handleInputChange}
+                    required
+                    className="h-11 border-border/50 focus:border-account-primary focus:ring-account-primary/20"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {error && (
+            <Alert className="border-account-error bg-account-error-bg">
+              <AlertTriangle className="h-4 w-4 text-account-error" />
+              <AlertDescription className="text-account-error font-medium">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {successMessage && (
+            <Alert className="border-account-success bg-account-success-bg">
+              <CheckCircle className="h-4 w-4 text-account-success" />
+              <AlertDescription className="text-account-success font-medium">
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 pt-6">
+            <Button
+              type="submit"
+              onClick={handleSubmit}
+              disabled={saving}
+              variant="default"
+              size="lg"
+              className="flex-1 h-12"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Salvar Alterações
+                </>
+              )}
+            </Button>
+
+            <Link href="/" className="flex-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full h-12"
+              >
+                Cancelar
+              </Button>
+            </Link>
+          </div>
         </div>
-
-        <Card className="rounded-lg shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-gray-800">
-              <User className="h-5 w-5" />
-              Informações Pessoais
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome" className="text-gray-700">
-                    Nome Completo
-                  </Label>
-                  <Input
-                    id="nome"
-                    name="nome"
-                    type="text"
-                    value={formData.nome}
-                    onChange={handleInputChange}
-                    required
-                    className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="cpf" className="text-gray-700">
-                    CPF
-                  </Label>
-                  <Input
-                    id="cpf"
-                    name="cpf"
-                    type="text"
-                    value={formData.cpf}
-                    onChange={handleInputChange}
-                    required
-                    disabled // CPF is often not editable
-                    className="rounded-md border-gray-300 bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="data_nascimento" className="text-gray-700">
-                    Data de Nascimento
-                  </Label>
-                  <Input
-                    id="data_nascimento"
-                    name="data_nascimento"
-                    type="date"
-                    value={formData.data_nascimento}
-                    onChange={handleInputChange}
-                    required
-                    className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-700">
-                  Nova Senha (deixe em branco para manter a atual)
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password || ""}
-                    onChange={handleInputChange}
-                    placeholder="Digite uma nova senha"
-                    className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent rounded-md"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-500" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-800">
-                  <MapPin className="h-5 w-5" />
-                  Endereço
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="rua" className="text-gray-700">
-                      Rua
-                    </Label>
-                    <Input
-                      id="rua"
-                      name="rua"
-                      type="text"
-                      value={formData.rua}
-                      onChange={handleInputChange}
-                      required
-                      className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="bairro" className="text-gray-700">
-                      Bairro
-                    </Label>
-                    <Input
-                      id="bairro"
-                      name="bairro"
-                      type="text"
-                      value={formData.bairro}
-                      onChange={handleInputChange}
-                      required
-                      className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cidade" className="text-gray-700">
-                      Cidade
-                    </Label>
-                    <Input
-                      id="cidade"
-                      name="cidade"
-                      type="text"
-                      value={formData.cidade}
-                      onChange={handleInputChange}
-                      required
-                      className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="pais" className="text-gray-700">
-                      País
-                    </Label>
-                    <Input
-                      id="pais"
-                      name="pais"
-                      type="text"
-                      value={formData.pais}
-                      onChange={handleInputChange}
-                      required
-                      className="rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {error && (
-                <Alert className="border-red-200 bg-red-50">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">
-                    <strong>Erro:</strong> {error}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {successMessage && (
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" /> {/* Added check icon */}
-                  <AlertDescription className="text-green-800">
-                    <strong>Sucesso:</strong> {successMessage}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="submit"
-                  disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-200 ease-in-out"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Salvar Alterações
-                    </>
-                  )}
-                </Button>
-
-                <Link href="/dashboard">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-md shadow-sm hover:bg-gray-100"
-                  >
-                    Cancelar
-                  </Button>
-                </Link>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
 }
 
-export default MinhaConta
+export default MyAccount
