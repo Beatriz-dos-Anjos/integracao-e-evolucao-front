@@ -1,11 +1,12 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { User } from "lucide-react"
+import { User, Loader2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   TrendingUp,
@@ -16,8 +17,19 @@ import {
   FileText,
   ArrowRight,
 } from "lucide-react"
+import api from "@/services/api"
 
-// Mock data - em produção viria de um banco de dados
+// Interface para o usuário (ensure this matches your backend response)
+interface UserData {
+  id: string
+  nome: string
+  cpf: string
+  // Add other user fields if they are returned by your /users/:id API
+  // e.g., data_nascimento?: string; rua?: string; cidade?: string; etc.
+}
+
+// Mock data for products and alerts (if these also come from API, you'll need to fetch them)
+// For now, we'll keep them as mock if your focus is user integration.
 const mockData = {
   products: [
     {
@@ -50,27 +62,124 @@ const mockData = {
 }
 
 export default function Dashboard() {
+  const [user, setUser] = useState<UserData | null>(null)
+  const [loadingUser, setLoadingUser] = useState(true)
+  const [userError, setUserError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoadingUser(true)
+        setUserError(null)
+
+        const userId = localStorage.getItem("users.id") // Get user ID from localStorage
+        if (!userId) {
+          // If no user ID is found, set an error and stop loading
+          setUserError("Usuário não logado ou ID não encontrado no armazenamento local.")
+          setLoadingUser(false)
+          return
+        }
+
+        console.log(`Attempting to fetch user data for ID: ${userId}`)
+        const response = await api.get(`/users/${userId}`) // Make actual API call
+
+        if (response.data) {
+          setUser({
+            ...response.data,
+            id: String(response.data.id), // Ensure ID is string
+          })
+          console.log("User data loaded successfully:", response.data)
+        } else {
+          setUserError("Dados do usuário não encontrados na resposta da API.")
+        }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        console.error("Erro ao carregar dados do usuário:", err)
+        if (err.response) {
+          // If it's an Axios error with a response
+          setUserError(
+            `Erro: ${err.response.status} - ${
+              err.response.data.message || "Não foi possível carregar os dados do usuário"
+            }`
+          )
+        } else if (err.request) {
+          // If the request was made but no response was received
+          setUserError("Erro de rede: Não foi possível conectar ao servidor.")
+        } else {
+          // Something else happened in setting up the request that triggered an Error
+          setUserError("Erro desconhecido ao carregar dados do usuário.")
+        }
+      } finally {
+        setLoadingUser(false)
+      }
+    }
+
+    fetchUserData()
+  }, []) // Empty dependency array means this runs once on component mount
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-4">
+            {/* Make sure /logo.svg exists in your public directory */}
             <Image src="/logo.svg" alt="Logo" width={144} height={60} />
             <h1 className="text-3xl font-bold text-gray-800">Micro Sistema Gerencial</h1>
           </div>
           <p className="text-gray-600">Controle seu negócio de forma simples e inteligente</p>
         </div>
-        <div className="flex items-center justify-center gap-4">
- <Link href={`/my-account/1`} className="ml-auto">
 
-              <Button variant="outline" size="sm">
+        {/* User Info and Account Button */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {loadingUser ? (
+              <div className="flex items-center gap-2 text-gray-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Carregando usuário...</span>
+              </div>
+            ) : user ? (
+              <div className="flex items-center gap-2 text-gray-700">
+                <User className="w-5 h-5" />
+                <span>
+                  Bem-vindo, <strong>{user.nome}</strong>
+                </span>
+              </div>
+            ) : (
+              <div className="text-red-500 text-sm">{userError || "Usuário não encontrado"}</div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* The button is enabled only if `user` object exists and `user.id` is available */}
+            {user?.id ? (
+              <Link href={`/my-account/${user.id}`}>
+                <Button variant="outline" size="sm">
+                  <User className="w-4 h-4 mr-2" />
+                  Minha Conta
+                </Button>
+              </Link>
+            ) : (
+              // Button is disabled if user or user.id is not available
+              <Button variant="outline" size="sm" disabled>
                 <User className="w-4 h-4 mr-2" />
                 Minha Conta
               </Button>
-            </Link>
-            </div>
-        {/* Dashboard Cards */}
+            )}
+          </div>
+        </div>
+
+        {/* User Error Alert */}
+        {userError && (
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              <strong>Aviso:</strong> {userError}. Verifique sua conexão ou login.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Dashboard Cards (These still use mockData for now) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-slate-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

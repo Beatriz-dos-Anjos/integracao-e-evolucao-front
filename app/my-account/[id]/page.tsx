@@ -1,3 +1,4 @@
+// app/my-account/[id]/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -15,13 +16,18 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  AlertTriangle,
+  CheckCircle, // Added for success message icon
 } from "lucide-react"
-import api from "@/services/api" 
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import api from "@/services/api"
 
+// Interface for user form data (ensure this matches your backend's expected PUT payload)
 interface UserFormData {
+  id: string
   nome: string
   cpf: string
-  password?: string 
+  password?: string // Optional, only send if user wants to change it
   data_nascimento: string
   rua: string
   cidade: string
@@ -30,13 +36,14 @@ interface UserFormData {
 }
 
 const MinhaConta = () => {
-  const params = useParams() 
-  const userCpfParam = params.id as string
+  const params = useParams()
+  const userId = params.id as string
 
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false) 
+  const [saving, setSaving] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState<UserFormData>({
+    id: "",
     nome: "",
     cpf: "",
     password: "",
@@ -49,72 +56,140 @@ const MinhaConta = () => {
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
+  // Fetch user data on component mount and when userId changes
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!userCpfParam) {
+      if (!userId) {
+        setError("ID do usuário não fornecido na URL.")
         setLoading(false)
         return
       }
 
       setLoading(true)
       setError(null)
+      setSuccessMessage(null) // Clear messages on new fetch
+
       try {
-        const response = await api.get(`users/${userCpfParam}`)
-        // Garante que todos os campos tenham valores string válidos
-        setFormData({
-          nome: response.data.nome || "",
-          cpf: response.data.cpf || "",
-          password: "", // Password sempre vazia para segurança
-          data_nascimento: response.data.data_nascimento || "",
-          rua: response.data.rua || "",
-          cidade: response.data.cidade || "",
-          bairro: response.data.bairro || "",
-          pais: response.data.pais || "",
-        })
-      } catch (err) {
+        console.log(`Buscando dados do usuário: ${userId}`)
+        const response = await api.get(`/users/${userId}`)
+
+        if (response.data) {
+          // Map backend data to form state, ensuring all fields are present
+          setFormData({
+            id: String(response.data.id || userId), // Fallback to userId from params
+            nome: response.data.nome || "",
+            cpf: response.data.cpf || "",
+            password: "", // Always clear password field for security
+            data_nascimento: response.data.data_nascimento || "",
+            rua: response.data.rua || "",
+            cidade: response.data.cidade || "",
+            bairro: response.data.bairro || "",
+            pais: response.data.pais || "",
+          })
+          console.log("Dados do usuário carregados:", response.data)
+        } else {
+          setError("Nenhum dado retornado para este usuário.")
+        }
+      } catch (err: any) {
         console.error("Erro ao carregar dados do usuário:", err)
-        setError("Não foi possível carregar os dados do usuário. Tente novamente.")
+        if (err.response) {
+          setError(
+            `Erro: ${err.response.status} - ${
+              err.response.data.message || "Não foi possível carregar os dados do usuário."
+            }`
+          )
+        } else if (err.request) {
+          setError("Erro de rede: Não foi possível conectar ao servidor para carregar dados.")
+        } else {
+          setError("Erro desconhecido ao carregar dados do usuário.")
+        }
       } finally {
         setLoading(false)
       }
     }
 
     fetchUserData()
-  }, [userCpfParam]) 
+  }, [userId]) // Depend on userId to refetch if the ID in the URL changes
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSaving(true) 
-    setError(null) 
-    setSuccessMessage(null)
+    setSaving(true)
+    setError(null)
+    setSuccessMessage(null) // Clear previous success/error messages
 
     try {
-      console.log("Dados do formulário para envio:", formData)
+      console.log("Dados do formulário para envio (antes da filtragem):", formData)
 
-      const response = await api.put('/users/1', formData)
+      // Create an object with only the data that should be sent to the backend
+      const dataToSend: Partial<UserFormData> = {
+        nome: formData.nome,
+        cpf: formData.cpf,
+        data_nascimento: formData.data_nascimento,
+        rua: formData.rua,
+        cidade: formData.cidade,
+        bairro: formData.bairro,
+        pais: formData.pais,
+      }
+
+      // Only include password if it's not empty, indicating user wants to change it
+      if (formData.password) {
+        dataToSend.password = formData.password
+      }
+
+      console.log("Dados do formulário para envio (após filtragem):", dataToSend)
+
+      const response = await api.put(`/users/${userId}`, dataToSend)
       console.log("Resposta da API:", response.data)
       setSuccessMessage("Informações salvas com sucesso!")
 
-    } catch (err) {
+      // Clear the password field after saving, regardless of success
+      setFormData((prev) => ({ ...prev, password: "" }))
+    } catch (err: any) {
       console.error("Erro ao salvar alterações:", err)
-      setError("Não foi possível salvar as alterações. Verifique os dados e tente novamente.")
+      if (err.response) {
+        setError(
+          `Erro ao salvar: ${err.response.status} - ${
+            err.response.data.message || "Não foi possível salvar as alterações."
+          }`
+        )
+      } else if (err.request) {
+        setError("Erro de rede: Não foi possível conectar ao servidor para salvar dados.")
+      } else {
+        setError("Erro desconhecido ao salvar alterações.")
+      }
     } finally {
-      setSaving(false) 
+      setSaving(false)
     }
   }
 
-  if (error && !loading) {
+  // Loading state
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
-        <p className="text-red-500 text-lg mb-4">{error}</p>
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+        <p className="text-gray-600">Carregando dados do usuário...</p>
+      </div>
+    )
+  }
+
+  // Error state when no data could be loaded at all
+  if (error && !formData.nome) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
+        <Alert className="border-red-200 bg-red-50 max-w-md mb-4">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            <strong>Erro:</strong> {error}
+          </AlertDescription>
+        </Alert>
         <Link href="/dashboard">
           <Button variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -137,13 +212,19 @@ const MinhaConta = () => {
             </Button>
           </Link>
           <div className="flex items-center gap-4">
-            <div className="bg-black text-white px-4 py-2 rounded-md font-bold text-lg shadow-md">MSG</div>
+            <div className="bg-black text-white px-4 py-2 rounded-md font-bold text-lg shadow-md">
+              MSG
+            </div>
             <h1 className="text-3xl font-bold text-gray-800">Minha Conta</h1>
           </div>
         </div>
 
         <div className="text-center">
-          <p className="text-gray-600">Gerencie suas informações pessoais</p>
+          <p className="text-gray-600">
+            Gerencie suas informações pessoais
+            {formData.nome && <span className="font-medium">- {formData.nome}</span>}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">ID do usuário: {userId}</p>
         </div>
 
         <Card className="rounded-lg shadow-lg">
@@ -157,7 +238,9 @@ const MinhaConta = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nome" className="text-gray-700">Nome Completo</Label>
+                  <Label htmlFor="nome" className="text-gray-700">
+                    Nome Completo
+                  </Label>
                   <Input
                     id="nome"
                     name="nome"
@@ -170,7 +253,9 @@ const MinhaConta = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="cpf" className="text-gray-700">CPF</Label>
+                  <Label htmlFor="cpf" className="text-gray-700">
+                    CPF
+                  </Label>
                   <Input
                     id="cpf"
                     name="cpf"
@@ -178,12 +263,15 @@ const MinhaConta = () => {
                     value={formData.cpf}
                     onChange={handleInputChange}
                     required
-                    disabled 
+                    disabled // CPF is often not editable
                     className="rounded-md border-gray-300 bg-gray-100 cursor-not-allowed"
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="data_nascimento" className="text-gray-700">Data de Nascimento</Label>
+                  <Label htmlFor="data_nascimento" className="text-gray-700">
+                    Data de Nascimento
+                  </Label>
                   <Input
                     id="data_nascimento"
                     name="data_nascimento"
@@ -197,7 +285,9 @@ const MinhaConta = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-700">Nova Senha (deixe em branco para manter a atual)</Label>
+                <Label htmlFor="password" className="text-gray-700">
+                  Nova Senha (deixe em branco para manter a atual)
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -229,10 +319,12 @@ const MinhaConta = () => {
                   <MapPin className="h-5 w-5" />
                   Endereço
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="rua" className="text-gray-700">Rua</Label>
+                    <Label htmlFor="rua" className="text-gray-700">
+                      Rua
+                    </Label>
                     <Input
                       id="rua"
                       name="rua"
@@ -245,7 +337,9 @@ const MinhaConta = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="bairro" className="text-gray-700">Bairro</Label>
+                    <Label htmlFor="bairro" className="text-gray-700">
+                      Bairro
+                    </Label>
                     <Input
                       id="bairro"
                       name="bairro"
@@ -258,7 +352,9 @@ const MinhaConta = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cidade" className="text-gray-700">Cidade</Label>
+                    <Label htmlFor="cidade" className="text-gray-700">
+                      Cidade
+                    </Label>
                     <Input
                       id="cidade"
                       name="cidade"
@@ -271,7 +367,9 @@ const MinhaConta = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="pais" className="text-gray-700">País</Label>
+                    <Label htmlFor="pais" className="text-gray-700">
+                      País
+                    </Label>
                     <Input
                       id="pais"
                       name="pais"
@@ -286,15 +384,21 @@ const MinhaConta = () => {
               </div>
 
               {error && (
-                <div className="text-red-500 text-sm mt-4 p-2 bg-red-100 border border-red-200 rounded-md">
-                  {error}
-                </div>
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    <strong>Erro:</strong> {error}
+                  </AlertDescription>
+                </Alert>
               )}
 
               {successMessage && (
-                <div className="text-green-600 text-sm mt-4 p-2 bg-green-100 border border-green-200 rounded-md">
-                  {successMessage}
-                </div>
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" /> {/* Added check icon */}
+                  <AlertDescription className="text-green-800">
+                    <strong>Sucesso:</strong> {successMessage}
+                  </AlertDescription>
+                </Alert>
               )}
 
               <div className="flex gap-4 pt-4">
@@ -315,9 +419,13 @@ const MinhaConta = () => {
                     </>
                   )}
                 </Button>
-                
+
                 <Link href="/dashboard">
-                  <Button type="button" variant="outline" className="rounded-md shadow-sm hover:bg-gray-100">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-md shadow-sm hover:bg-gray-100"
+                  >
                     Cancelar
                   </Button>
                 </Link>
