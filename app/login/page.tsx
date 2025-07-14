@@ -25,29 +25,44 @@ export default function LoginPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+ const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setLoading(true)
 
-    try {
-      if (!formData.cpf || !formData.password) {
-        return alert("CPF e senha são obrigatórios")
-      }
-
-      const response = await api.post("/auth/login", {
-        cpf: formData.cpf,
-        password: formData.password
-      })
-
-      localStorage.setItem("token", response.data.token)
-      router.push("/dashboard")
-    } catch (error: unknown) {
-      const msg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Erro ao fazer login"
-      alert(msg)
-    } finally {
-      setLoading(false)
+  try {
+    if (!formData.cpf || !formData.password) {
+      return alert("CPF e senha são obrigatórios")
     }
+
+    const response = await api.post("/auth/login", {
+      cpf: formData.cpf,
+      password: formData.password
+    })
+
+    const token = response.data.token
+    localStorage.setItem("token", token)
+
+    // Decodificar o token JWT para pegar o userId
+    const [, payloadBase64] = token.split(".")
+    const payload = JSON.parse(atob(payloadBase64)) // decodifica o base64
+
+    const userId = payload.userId
+    if (!userId) {
+      alert("ID do usuário não encontrado no token.")
+      return
+    }
+
+    localStorage.setItem("users.id", String(userId))
+
+    router.push("/dashboard")
+  } catch (error: unknown) {
+    const msg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || "Erro ao fazer login"
+    alert(msg)
+  } finally {
+    setLoading(false)
   }
+}
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-petrol-blue/10 to-mint-green/10 flex items-center justify-center p-4">
