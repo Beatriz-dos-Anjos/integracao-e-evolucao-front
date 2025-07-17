@@ -1,83 +1,140 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DollarSign, Plus, Trash2, ArrowLeft, Home } from "lucide-react"
+import { DollarSign, Plus, Trash2, ArrowLeft, Home, X, Check } from "lucide-react"
+import api from "@/services/api"
+import { Edit } from "lucide-react"
 
 interface Transaction {
   id: number
-  type: "receita" | "despesa"
-  category: string
-  description: string
-  value: number
-  date: string
+  tipo: "receita" | "despesa"
+  categoria: string
+  descricao: string
+  valor: number
+  data: string
 }
 
 export default function FinanceiroPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: 1,
-      type: "receita",
-      category: "Vendas",
-      description: "Venda de salgados",
-      value: 35.0,
-      date: "22/06/2025",
-    },
-    {
-      id: 2,
-      type: "despesa",
-      category: "Compras",
-      description: "Compra de ingredientes",
-      value: 45.0,
-      date: "23/06/2025",
-    },
-    {
-      id: 3,
-      type: "receita",
-      category: "Vendas",
-      description: "Venda de açaí",
-      value: 80.0,
-      date: "23/06/2025",
-    },
-  ])
+  const [transactions, setTransactions] = useState<Transaction[]>([])
 
   const [newTransaction, setNewTransaction] = useState({
-    type: "receita" as "receita" | "despesa",
-    category: "",
-    description: "",
-    value: 0,
+    tipo: "receita" as "receita" | "despesa",
+    categoria: "",
+    descricao: "",
+    valor: 0,
   })
+    const [editingId, setEditingId] = useState<number | null>(null)
+  const [editTransaction, setEditTransaction] = useState({
+    tipo: "receita" as "receita" | "despesa",
+    categoria: "",
+    descricao: "",
+    valor: "",
+  })
+  useEffect(() => {
+    async function carregarTransacoes() {
+      try {
+        const res = await api.get("/api/transactions")
+        setTransactions(res.data.transactions || [])
+      } catch (err) {
+        console.error("Erro ao carregar transações", err)
+      }
+    }
 
-  // Financial calculations
-  const totalRevenue = transactions.filter((t) => t.type === "receita").reduce((sum, t) => sum + t.value, 0)
-  const totalExpenses = transactions.filter((t) => t.type === "despesa").reduce((sum, t) => sum + t.value, 0)
+    carregarTransacoes()
+  }, [])
+
+const totalRevenue = transactions
+  .filter((t) => t.tipo === "receita")
+  .reduce((sum, t) => {
+    const valor = Number(t.valor) || 0
+    return sum + valor
+  }, 0)
+
+const totalExpenses = transactions
+  .filter((t) => t.tipo === "despesa")
+  .reduce((sum, t) => {
+    const valor = Number(t.valor) || 0
+    return sum + valor
+  }, 0)
+
+
   const profit = totalRevenue - totalExpenses
 
-  const addTransaction = () => {
-    if (newTransaction.description && newTransaction.category && newTransaction.value > 0) {
-      const transaction: Transaction = {
-        id: Date.now(),
-        ...newTransaction,
-        date: new Date().toLocaleDateString("pt-BR"),
-      }
+  const addTransaction = async () => {
+    const { tipo, categoria, descricao, valor } = newTransaction
+    if (!descricao || !categoria || valor <= 0) return
 
-      setTransactions([transaction, ...transactions])
-      setNewTransaction({
-        type: "receita",
-        category: "",
-        description: "",
-        value: 0,
+    try {
+      const res = await api.post("/api/transactions", {
+        tipo,
+        categoria,
+        descricao,
+        valor,
+        data: new Date().toISOString(),
       })
+
+      setTransactions([res.data.transaction, ...transactions])
+      setNewTransaction({ tipo: "receita", categoria: "", descricao: "", valor: 0 })
+    } catch (err) {
+      console.error("Erro ao adicionar transação", err)
     }
   }
 
-  const deleteTransaction = (id: number) => {
-    setTransactions(transactions.filter((t) => t.id !== id))
+  const deleteTransaction = async (id: number) => {
+    try {
+      await api.delete(`api/transactions/${id}`)
+      setTransactions(transactions.filter((t) => t.id !== id))
+    } catch (err) {
+      console.error("Erro ao deletar transação", err)
+    }
   }
+   const startEdit = (transaction: Transaction) => {
+    setEditingId(transaction.id)
+    setEditTransaction({
+      tipo: transaction.tipo,
+      categoria: transaction.categoria,
+      descricao: transaction.descricao,
+      valor: transaction.valor.toString(),
+    })
+  }
+
+  const saveEdit = async () => {
+    if (!editingId) return
+    
+    const { tipo, categoria, descricao, valor } = editTransaction
+    if (!descricao || !categoria || !valor || Number(valor) <= 0) return
+
+    try {
+      await api.put(`/api/transactions/${editingId}`, {
+        tipo,
+        categoria,
+        descricao,
+        valor: Number(valor),
+      })
+
+      setTransactions(transactions.map(t => 
+        t.id === editingId 
+          ? { ...t, tipo, categoria, descricao, valor: Number(valor) }
+          : t
+      ))
+      
+      setEditingId(null)
+      setEditTransaction({ tipo: "receita", categoria: "", descricao: "", valor: "" })
+    } catch (err) {
+      console.error("Erro ao editar transação", err)
+    }
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditTransaction({ tipo: "receita", categoria: "", descricao: "", valor: "" })
+  }
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -118,12 +175,12 @@ export default function FinanceiroPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="transactionType">Tipo de Transação</Label>
-                    <select
+                   <select
                       id="transactionType"
                       className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      value={newTransaction.type}
+                      value={newTransaction.tipo}
                       onChange={(e) =>
-                        setNewTransaction({ ...newTransaction, type: e.target.value as "receita" | "despesa" })
+                        setNewTransaction({ ...newTransaction, tipo: e.target.value as "receita" | "despesa" })
                       }
                     >
                       <option value="receita">💰 Receita</option>
@@ -135,8 +192,8 @@ export default function FinanceiroPage() {
                     <Input
                       id="transactionCategory"
                       placeholder="Ex: Vendas, Compras"
-                      value={newTransaction.category}
-                      onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
+                      value={newTransaction.categoria}
+                      onChange={(e) => setNewTransaction({ ...newTransaction, categoria: e.target.value })}
                     />
                   </div>
                 </div>
@@ -146,8 +203,8 @@ export default function FinanceiroPage() {
                   <Input
                     id="transactionDescription"
                     placeholder="Descreva a transação"
-                    value={newTransaction.description}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                    value={newTransaction.descricao}
+                    onChange={(e) => setNewTransaction({ ...newTransaction, descricao: e.target.value })}
                   />
                 </div>
 
@@ -158,18 +215,18 @@ export default function FinanceiroPage() {
                     type="number"
                     step="0.01"
                     placeholder="0"
-                    value={newTransaction.value}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, value: Number(e.target.value) })}
+                    value={newTransaction.valor}
+                    onChange={(e) => setNewTransaction({ ...newTransaction, valor: Number(e.target.value) })}
                   />
                 </div>
 
-                <Button
+                 <Button
                   onClick={addTransaction}
                   className={`w-full ${
-                    newTransaction.type === "receita" ? "bg-teal-600 hover:bg-teal-700" : "bg-red-600 hover:bg-red-700"
+                    newTransaction.tipo === "receita" ? "bg-teal-600 hover:bg-teal-700" : "bg-red-600 hover:bg-red-700"
                   }`}
                 >
-                  {newTransaction.type === "receita" ? "Registrar Receita" : "Registrar Despesa"}
+                  {newTransaction.tipo === "receita" ? "Registrar Receita" : "Registrar Despesa"}
                 </Button>
               </CardContent>
             </Card>
@@ -205,7 +262,6 @@ export default function FinanceiroPage() {
           </div>
         </div>
 
-        {/* Histórico de Transações */}
         <Card>
           <CardHeader>
             <CardTitle>Histórico de Transações</CardTitle>
@@ -215,34 +271,115 @@ export default function FinanceiroPage() {
               {transactions.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">Nenhuma transação registrada ainda.</p>
               ) : (
-                transactions.map((transaction) => (
+                 transactions.map((transaction) => (
                   <div
                     key={transaction.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                    className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all hover:shadow-md"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-3 h-3 rounded-full ${
-                          transaction.type === "receita" ? "bg-teal-500" : "bg-red-500"
-                        }`}
-                      />
-                      <div>
-                        <h4 className="font-medium text-gray-900">{transaction.description}</h4>
-                        <p className="text-sm text-gray-500">
-                          {transaction.category} • {transaction.date}
-                        </p>
+                    {editingId === transaction.id ? (
+                      // Edit Mode
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Tipo</Label>
+                            <select
+                              className="w-full p-2 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                              value={editTransaction.tipo}
+                              onChange={(e) =>
+                                setEditTransaction({ ...editTransaction, tipo: e.target.value as "receita" | "despesa" })
+                              }
+                            >
+                              <option value="receita">💰 Receita</option>
+                              <option value="despesa">💸 Despesa</option>
+                            </select>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Categoria</Label>
+                            <Input
+                              value={editTransaction.categoria}
+                              onChange={(e) => setEditTransaction({ ...editTransaction, categoria: e.target.value })}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-700">Valor (R$)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={editTransaction.valor}
+                              onChange={(e) => setEditTransaction({ ...editTransaction, valor: e.target.value })}
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Descrição</Label>
+                          <Input
+                            value={editTransaction.descricao}
+                            onChange={(e) => setEditTransaction({ ...editTransaction, descricao: e.target.value })}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            size="sm" 
+                            onClick={saveEdit}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Salvar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={cancelEdit}
+                            className="hover:bg-gray-50"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Cancelar
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`font-bold ${transaction.type === "receita" ? "text-teal-600" : "text-red-600"}`}
-                      >
-                        {transaction.type === "receita" ? "+" : "-"} R$ {transaction.value.toFixed(2)}
-                      </span>
-                      <Button size="sm" variant="outline" onClick={() => deleteTransaction(transaction.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    ) : (
+                  <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={`w-4 h-4 rounded-full ${
+                              transaction.tipo === "receita" ? "bg-teal-500" : "bg-red-500"
+                            }`}
+                          />
+                          <div>
+                            <h4 className="font-medium text-gray-900">{transaction.descricao}</h4>
+                            <p className="text-sm text-gray-500">
+                              {transaction.categoria} • {new Date(transaction.data).toLocaleDateString("pt-BR")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`font-bold text-lg ${transaction.tipo === "receita" ? "text-teal-600" : "text-red-600"}`}
+                          >
+                            {transaction.tipo === "receita" ? "+" : "-"} {(Number(transaction.valor) || 0)}
+                          </span>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => startEdit(transaction)}
+                            className="hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 transition-all"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => deleteTransaction(transaction.id)}
+                            className="hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
