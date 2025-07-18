@@ -28,6 +28,8 @@ interface Produto {
 }
 
 export default function Dashboard() {
+  const [lucro, setLucro] = useState<number | null>(null)
+  const [carregandoLucro, setCarregandoLucro] = useState(true)
   const [user, setUser] = useState<UserData | null>(null)
   const [produtos, setProdutos] = useState<Produto[]>([])
   const [tiposProdutos, setTiposProdutos] = useState<number>(0)
@@ -35,6 +37,19 @@ export default function Dashboard() {
   const [userError, setUserError] = useState<string | null>(null)
 
   useEffect(() => {
+    const fetchLucro = async () => {
+      try {
+        const res = await api.get("/api/dashboard/summary")
+        if (res.data && res.data.success && res.data.summary && typeof res.data.summary.profit === "number") {
+          setLucro(res.data.summary.profit)
+        }
+      } catch (err) {
+        console.error("Erro ao buscar lucro do mês:", err)
+      } finally {
+        setCarregandoLucro(false)
+      }
+    }
+    fetchLucro()
     const fetchUserData = async () => {
       try {
         const userId = localStorage.getItem("users.id")
@@ -156,8 +171,10 @@ export default function Dashboard() {
               <TrendingUp className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">--</div>
-              <p className="text-xs text-teal-200">* requer endpoint</p>
+              <div className="text-2xl font-bold">
+                {carregandoLucro ? "..." : lucro !== null ? `R$ ${lucro.toFixed(2)}` : "R$ 0,00"}
+              </div>
+              <p className="text-xs text-teal-200">Lucro Atual </p>
             </CardContent>
           </Card>
 
