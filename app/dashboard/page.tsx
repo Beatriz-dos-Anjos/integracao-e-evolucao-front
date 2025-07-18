@@ -16,22 +16,22 @@ interface UserData {
   cpf: string
 }
 
-interface DashboardData {
-  totalProdutos: number
-  inventoryValue: number
-  monthlyProfit: number
-  lowStockProducts: {
-    id: number
-    nome: string
-    quantidade_estoque: number
-  }[]
+interface Produto {
+  id: number
+  nome: string
+  categoria: string
+  quantidade_estoque: number
+  preco_compra: number
+  lucro?: number
+  data_venda?: string
+  min_estoque?: number
 }
 
 export default function Dashboard() {
   const [user, setUser] = useState<UserData | null>(null)
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [produtos, setProdutos] = useState<Produto[]>([])
+  const [tiposProdutos, setTiposProdutos] = useState<number>(0)
   const [loadingUser, setLoadingUser] = useState(true)
-  const [loadingDashboard, setLoadingDashboard] = useState(true)
   const [userError, setUserError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -61,20 +61,26 @@ export default function Dashboard() {
       }
     }
 
-    const fetchDashboard = async () => {
+    const fetchProdutos = async () => {
       try {
-        const res = await api.get("/api/dashboard/summary")
-        setDashboardData(res.data)
+        const res = await api.get("/products")
+        const produtosData: Produto[] = res.data
+        setProdutos(produtosData)
+
+        const categoriasUnicas = new Set(produtosData.map(p => p.categoria))
+        setTiposProdutos(categoriasUnicas.size)
       } catch (err) {
-        console.error("Erro ao carregar dashboard:", err)
-      } finally {
-        setLoadingDashboard(false)
+        console.error("Erro ao buscar produtos:", err)
       }
     }
 
     fetchUserData()
-    fetchDashboard()
+    fetchProdutos()
   }, [])
+
+  const totalProdutos = produtos.length
+  const lowStock = produtos.filter(p => p.quantidade_estoque < 10)
+  const inventoryValue = produtos.reduce((acc, p) => acc + p.quantidade_estoque * p.preco_compra, 0)
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -99,15 +105,12 @@ export default function Dashboard() {
             ) : user ? (
               <div className="flex items-center gap-2 text-gray-700">
                 <User className="w-5 h-5" />
-                <span>
-                  Bem-vindo, <strong>{user.nome}</strong>
-                </span>
+                <span>Bem-vindo, <strong>{user.nome}</strong></span>
               </div>
             ) : (
               <div className="text-red-500 text-sm">{userError || "Usuário não encontrado"}</div>
             )}
           </div>
-
           <div className="flex items-center gap-4">
             {user?.id ? (
               <Link href={`/my-account/${user.id}`}>
@@ -142,10 +145,8 @@ export default function Dashboard() {
               <Package className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {loadingDashboard ? "..." : dashboardData?.totalProdutos ?? 0}
-              </div>
-              <p className="text-xs text-slate-200">tipos diferentes</p>
+              <div className="text-2xl font-bold">{totalProdutos}</div>
+              <p className="text-xs text-slate-200">{tiposProdutos} tipos diferentes</p>
             </CardContent>
           </Card>
 
@@ -155,10 +156,8 @@ export default function Dashboard() {
               <TrendingUp className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {loadingDashboard ? "..." : `R$ ${dashboardData?.monthlyProfit?.toFixed(2) ?? 0}`}
-              </div>
-              <p className="text-xs text-teal-200">+ lucro líquido</p>
+              <div className="text-2xl font-bold">--</div>
+              <p className="text-xs text-teal-200">* requer endpoint</p>
             </CardContent>
           </Card>
 
@@ -168,9 +167,7 @@ export default function Dashboard() {
               <DollarSign className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {loadingDashboard ? "..." : `R$ ${dashboardData?.inventoryValue?.toFixed(2) ?? 0}`}
-              </div>
+              <div className="text-2xl font-bold">R$ {inventoryValue.toFixed(2)}</div>
               <p className="text-xs text-yellow-200">Investimento atual</p>
             </CardContent>
           </Card>
@@ -181,27 +178,22 @@ export default function Dashboard() {
               <AlertTriangle className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {loadingDashboard ? "..." : dashboardData?.lowStockProducts?.length ?? 0}
-              </div>
+              <div className="text-2xl font-bold">{lowStock.length}</div>
               <p className="text-xs text-red-200">Produtos com estoque baixo</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Alerta de Estoque Baixo */}
-        {dashboardData?.lowStockProducts?.length > 0 && (
+        {lowStock.length > 0 && (
           <Alert className="border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
               <strong>Atenção: Estoque Baixo</strong>
               <div className="mt-2 space-y-1">
-                {dashboardData.lowStockProducts.map((product) => (
+                {lowStock.map((product) => (
                   <div key={product.id} className="flex justify-between items-center gap-8">
                     <span>{product.nome}</span>
-                    <Badge variant="destructive">
-                      {product.quantidade_estoque} restantes (mín: 10)
-                    </Badge>
+                    <Badge variant="destructive">{product.quantidade_estoque} restantes (mín: 10)</Badge>
                   </div>
                 ))}
               </div>
