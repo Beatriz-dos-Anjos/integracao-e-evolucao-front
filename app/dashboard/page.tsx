@@ -6,107 +6,69 @@ import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { User, Loader2 } from "lucide-react"
+import { User, Loader2, AlertTriangle, Package, TrendingUp, DollarSign, BarChart3, FileText, ArrowRight } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  TrendingUp,
-  DollarSign,
-  AlertTriangle,
-  Package,
-  BarChart3,
-  FileText,
-  ArrowRight,
-} from "lucide-react"
 import api from "@/services/api"
 
-// Interface para o usuário (ensure this matches your backend response)
 interface UserData {
   id: string
   nome: string
   cpf: string
-  // Add other user fields if they are returned by your /users/:id API
-  // e.g., data_nascimento?: string; rua?: string; cidade?: string; etc.
 }
 
-// Mock data for products and alerts (if these also come from API, you'll need to fetch them)
-// For now, we'll keep them as mock if your focus is user integration.
-const mockData = {
-  products: [
-    {
-      id: 1,
-      name: "Açaí 500ml",
-      category: "Bebidas",
-      quantity: 25,
-      minStock: 10,
-      purchasePrice: 3.5,
-      salePrice: 8.0,
-    },
-    {
-      id: 2,
-      name: "Salgado Assado",
-      category: "Alimentação",
-      quantity: 30,
-      minStock: 15,
-      purchasePrice: 2.0,
-      salePrice: 5.0,
-    },
-  ],
-  lowStockProducts: [
-    {
-      id: 1,
-      name: "Açaí 500ml",
-      quantity: 5,
-      minStock: 10,
-    },
-  ],
+interface Produto {
+  id: number
+  nome: string
+  categoria: string
+  quantidade_estoque: number
+  preco_compra: number
+  lucro?: number
+  data_venda?: string
+  min_estoque?: number
 }
 
 export default function Dashboard() {
+  const [lucro, setLucro] = useState<number | null>(null)
+  const [carregandoLucro, setCarregandoLucro] = useState(true)
   const [user, setUser] = useState<UserData | null>(null)
+  const [produtos, setProdutos] = useState<Produto[]>([])
+  const [tiposProdutos, setTiposProdutos] = useState<number>(0)
   const [loadingUser, setLoadingUser] = useState(true)
   const [userError, setUserError] = useState<string | null>(null)
 
   useEffect(() => {
+    const fetchLucro = async () => {
+      try {
+        const res = await api.get("/api/dashboard/summary")
+        if (res.data && res.data.success && res.data.summary && typeof res.data.summary.profit === "number") {
+          setLucro(res.data.summary.profit)
+        }
+      } catch (err) {
+        console.error("Erro ao buscar lucro do mês:", err)
+      } finally {
+        setCarregandoLucro(false)
+      }
+    }
+    fetchLucro()
     const fetchUserData = async () => {
       try {
-        setLoadingUser(true)
-        setUserError(null)
-
-        const userId = localStorage.getItem("users.id") // Get user ID from localStorage
+        const userId = localStorage.getItem("users.id")
         if (!userId) {
-          // If no user ID is found, set an error and stop loading
           setUserError("Usuário não logado ou ID não encontrado no armazenamento local.")
-          setLoadingUser(false)
           return
         }
-
-        console.log(`Attempting to fetch user data for ID: ${userId}`)
-        const response = await api.get(`/users/${userId}`) // Make actual API call
-
-        if (response.data) {
-          setUser({
-            ...response.data,
-            id: String(response.data.id), // Ensure ID is string
-          })
-          console.log("User data loaded successfully:", response.data)
-        } else {
-          setUserError("Dados do usuário não encontrados na resposta da API.")
-        }
+        const response = await api.get(`/users/${userId}`)
+        setUser({
+          ...response.data,
+          id: String(response.data.id),
+        })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-        console.error("Erro ao carregar dados do usuário:", err)
         if (err.response) {
-          // If it's an Axios error with a response
-          setUserError(
-            `Erro: ${err.response.status} - ${
-              err.response.data.message || "Não foi possível carregar os dados do usuário"
-            }`
-          )
+          setUserError(`Erro: ${err.response.status} - ${err.response.data.message}`)
         } else if (err.request) {
-          // If the request was made but no response was received
           setUserError("Erro de rede: Não foi possível conectar ao servidor.")
         } else {
-          // Something else happened in setting up the request that triggered an Error
           setUserError("Erro desconhecido ao carregar dados do usuário.")
         }
       } finally {
@@ -114,8 +76,26 @@ export default function Dashboard() {
       }
     }
 
+    const fetchProdutos = async () => {
+      try {
+        const res = await api.get("/products")
+        const produtosData: Produto[] = res.data
+        setProdutos(produtosData)
+
+        const categoriasUnicas = new Set(produtosData.map(p => p.categoria))
+        setTiposProdutos(categoriasUnicas.size)
+      } catch (err) {
+        console.error("Erro ao buscar produtos:", err)
+      }
+    }
+
     fetchUserData()
-  }, []) // Empty dependency array means this runs once on component mount
+    fetchProdutos()
+  }, [])
+
+  const totalProdutos = produtos.length
+  const lowStock = produtos.filter(p => p.quantidade_estoque < 10)
+  const inventoryValue = produtos.reduce((acc, p) => acc + p.quantidade_estoque * p.preco_compra, 0)
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -123,14 +103,13 @@ export default function Dashboard() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-4">
-            {/* Make sure /logo.svg exists in your public directory */}
             <Image src="/logo.svg" alt="Logo" width={144} height={60} />
             <h1 className="text-3xl font-bold text-gray-800">Micro Sistema Gerencial</h1>
           </div>
           <p className="text-gray-600">Controle seu negócio de forma simples e inteligente</p>
         </div>
 
-        {/* User Info and Account Button */}
+        {/* User Info */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {loadingUser ? (
@@ -141,17 +120,13 @@ export default function Dashboard() {
             ) : user ? (
               <div className="flex items-center gap-2 text-gray-700">
                 <User className="w-5 h-5" />
-                <span>
-                  Bem-vindo, <strong>{user.nome}</strong>
-                </span>
+                <span>Bem-vindo, <strong>{user.nome}</strong></span>
               </div>
             ) : (
               <div className="text-red-500 text-sm">{userError || "Usuário não encontrado"}</div>
             )}
           </div>
-
           <div className="flex items-center gap-4">
-            {/* The button is enabled only if `user` object exists and `user.id` is available */}
             {user?.id ? (
               <Link href={`/my-account/${user.id}`}>
                 <Button variant="outline" size="sm">
@@ -160,7 +135,6 @@ export default function Dashboard() {
                 </Button>
               </Link>
             ) : (
-              // Button is disabled if user or user.id is not available
               <Button variant="outline" size="sm" disabled>
                 <User className="w-4 h-4 mr-2" />
                 Minha Conta
@@ -169,7 +143,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* User Error Alert */}
         {userError && (
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
@@ -179,7 +152,7 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        {/* Dashboard Cards (These still use mockData for now) */}
+        {/* Dashboard Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-slate-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -187,8 +160,8 @@ export default function Dashboard() {
               <Package className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.products.length}</div>
-              <p className="text-xs text-slate-200">{mockData.products.length} tipos diferentes</p>
+              <div className="text-2xl font-bold">{totalProdutos}</div>
+              <p className="text-xs text-slate-200">{tiposProdutos} tipos diferentes</p>
             </CardContent>
           </Card>
 
@@ -198,8 +171,10 @@ export default function Dashboard() {
               <TrendingUp className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ 5000</div>
-              <p className="text-xs text-teal-200">+20% margem</p>
+              <div className="text-2xl font-bold">
+                {carregandoLucro ? "..." : lucro !== null ? `R$ ${lucro.toFixed(2)}` : "R$ 0,00"}
+              </div>
+              <p className="text-xs text-teal-200">Lucro Atual </p>
             </CardContent>
           </Card>
 
@@ -209,7 +184,7 @@ export default function Dashboard() {
               <DollarSign className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ 2000</div>
+              <div className="text-2xl font-bold">R$ {inventoryValue.toFixed(2)}</div>
               <p className="text-xs text-yellow-200">Investimento atual</p>
             </CardContent>
           </Card>
@@ -220,25 +195,22 @@ export default function Dashboard() {
               <AlertTriangle className="h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.lowStockProducts.length}</div>
+              <div className="text-2xl font-bold">{lowStock.length}</div>
               <p className="text-xs text-red-200">Produtos com estoque baixo</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Low Stock Alert */}
-        {mockData.lowStockProducts.length > 0 && (
+        {lowStock.length > 0 && (
           <Alert className="border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
               <strong>Atenção: Estoque Baixo</strong>
               <div className="mt-2 space-y-1">
-                {mockData.lowStockProducts.map((product) => (
+                {lowStock.map((product) => (
                   <div key={product.id} className="flex justify-between items-center gap-8">
-                    <span>{product.name}</span>
-                    <Badge variant="destructive">
-                      {product.quantity} restantes (mín: {product.minStock})
-                    </Badge>
+                    <span>{product.nome}</span>
+                    <Badge variant="destructive">{product.quantidade_estoque} restantes (mín: 10)</Badge>
                   </div>
                 ))}
               </div>
@@ -246,7 +218,7 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        {/* Navigation Cards */}
+        {/* Navegação */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link href="/inventory">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-slate-300">
@@ -255,7 +227,7 @@ export default function Dashboard() {
                 <CardTitle className="text-slate-700">Estoque</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-sm text-gray-600 mb-4">Gerencie produtos e monitore níveis de estoque</p>
+                <p className="text-sm text-gray-600 mb-4">Gerencie produtos e estoque</p>
                 <Button className="w-full bg-slate-600 hover:bg-slate-700">
                   Acessar <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -270,7 +242,7 @@ export default function Dashboard() {
                 <CardTitle className="text-teal-700">Financeiro</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-sm text-gray-600 mb-4">Controle receitas, despesas e fluxo de caixa</p>
+                <p className="text-sm text-gray-600 mb-4">Controle receitas e despesas</p>
                 <Button className="w-full bg-teal-600 hover:bg-teal-700">
                   Acessar <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -285,7 +257,7 @@ export default function Dashboard() {
                 <CardTitle className="text-blue-700">Gráficos</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-sm text-gray-600 mb-4">Visualize dados e tendências do negócio</p>
+                <p className="text-sm text-gray-600 mb-4">Visualize dados e tendências</p>
                 <Button className="w-full bg-blue-600 hover:bg-blue-700">
                   Acessar <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -300,7 +272,7 @@ export default function Dashboard() {
                 <CardTitle className="text-purple-700">Relatórios</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-sm text-gray-600 mb-4">Gere relatórios detalhados e análises</p>
+                <p className="text-sm text-gray-600 mb-4">Gere relatórios detalhados</p>
                 <Button className="w-full bg-purple-600 hover:bg-purple-700">
                   Acessar <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
