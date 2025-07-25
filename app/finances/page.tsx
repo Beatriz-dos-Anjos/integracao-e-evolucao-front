@@ -142,7 +142,7 @@ const totalExpenses = transactions
         {/* Header with Navigation */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/">
+            <Link href="/dashboard">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
