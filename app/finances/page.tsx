@@ -142,7 +142,7 @@ const totalExpenses = transactions
         {/* Header with Navigation */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/">
+            <Link href="/dashboard">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
@@ -153,12 +153,6 @@ const totalExpenses = transactions
               <h1 className="text-3xl font-bold text-gray-800">Gestão Financeira</h1>
             </div>
           </div>
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm">
-              <Home className="w-4 h-4 mr-2" />
-              Dashboard
-            </Button>
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
