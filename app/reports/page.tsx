@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
@@ -55,9 +56,9 @@ interface Product {
         setMostProfitableProducts(dashboard.produtos_mais_lucrativos)
         setStats(dashboard.estatisticas)
 
-        const totalLucro = lucrative.reduce((acc, p) => acc + parseFloat(p.lucro_total), 0)
-        const avgLucroUnit = lucrative.reduce((acc, p) => acc + parseFloat(p.lucro_unitario), 0) / lucrative.length
-        const totalItens = lucrative.reduce((acc, p) => acc + p.quantidade_estoque, 0)
+        const totalLucro = lucrative.reduce((acc: number, p: { lucro_total: string }) => acc + parseFloat(p.lucro_total), 0)
+        const avgLucroUnit = lucrative.reduce((acc: number, p: { lucro_unitario: string }) => acc + parseFloat(p.lucro_unitario), 0) / lucrative.length
+        const totalItens = lucrative.reduce((acc: any, p: { quantidade_estoque: any }) => acc + p.quantidade_estoque, 0)
         const ticketMedio = totalItens ? totalLucro / totalItens : 0
 
         setBusinessMetrics({
