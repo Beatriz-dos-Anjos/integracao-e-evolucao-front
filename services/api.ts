@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001", // Corrigido para porta 3001
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://back-gestaoestoque.onrender.com", // Default para produção
   headers: {
     "Content-Type": "application/json",
   },
