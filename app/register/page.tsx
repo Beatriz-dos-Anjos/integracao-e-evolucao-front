@@ -14,16 +14,18 @@ import api from "@/services/api"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    fullName: "",
-    cpf: "",
-    password: "",
-    confirmPassword: "",
-    birthDate: "",
-    street: "",
-    city: "",
-    neighborhood: "",
-    country: "",
-  })
+  fullName: "",
+  cpf: "",
+  email: "", 
+  password: "",
+  confirmPassword: "",
+  birthDate: "",
+  street: "",
+  city: "",
+  neighborhood: "",
+  country: "",
+})
+
 
   const [showPasswordFields, setShowPasswordFields] = useState({
     password: false,
@@ -65,6 +67,7 @@ export default function RegisterPage() {
       await api.post("/auth/register", {
         nome: formData.fullName,
         cpf: formData.cpf,
+        email: formData.email, 
         password: formData.password,
         data_nascimento: formData.birthDate,
         rua: formData.street,
@@ -96,6 +99,14 @@ export default function RegisterPage() {
           <CardContent className="p-6">
             <form onSubmit={handleRegister} className="space-y-4">
               <InputGroup label="Nome completo" name="fullName" value={formData.fullName} onChange={handleInputChange} />
+              <InputGroup
+  label="Email"
+  name="email"
+  type="email"
+  value={formData.email}
+  onChange={handleInputChange}
+/>
+
               <div className="space-y-2">
                 <Label htmlFor="cpf">CPF</Label>
                 <MaskedInput
