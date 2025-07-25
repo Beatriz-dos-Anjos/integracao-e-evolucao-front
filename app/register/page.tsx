@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     fullName: "",
     cpf: "",
+    email: "",
     password: "",
     confirmPassword: "",
     birthDate: "",
@@ -65,6 +66,7 @@ export default function RegisterPage() {
       await api.post("/auth/register", {
         nome: formData.fullName,
         cpf: formData.cpf,
+        email: formData.email,
         password: formData.password,
         data_nascimento: formData.birthDate,
         rua: formData.street,
@@ -96,6 +98,7 @@ export default function RegisterPage() {
           <CardContent className="p-6">
             <form onSubmit={handleRegister} className="space-y-4">
               <InputGroup label="Nome completo" name="fullName" value={formData.fullName} onChange={handleInputChange} />
+              <InputGroup label="Email" name="email" value={formData.email} onChange={handleInputChange} type="email" />
               <div className="space-y-2">
                 <Label htmlFor="cpf">CPF</Label>
                 <MaskedInput
