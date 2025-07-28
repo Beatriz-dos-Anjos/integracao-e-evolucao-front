@@ -66,6 +66,7 @@ export default function RegisterPage() {
       await api.post("/auth/register", {
         nome: formData.fullName,
         cpf: formData.cpf,
+        email: formData.email,
         password: formData.password,
         data_nascimento: formData.birthDate,
         rua: formData.street,
