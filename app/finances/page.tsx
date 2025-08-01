@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DollarSign, Plus, Trash2, ArrowLeft, Home, X, Check } from "lucide-react"
+import { DollarSign, Plus, Trash2, ArrowLeft, X, Check } from "lucide-react"
 import api from "@/services/api"
 import { Edit } from "lucide-react"
 
@@ -153,12 +153,6 @@ const totalExpenses = transactions
               <h1 className="text-3xl font-bold text-gray-800">Gestão Financeira</h1>
             </div>
           </div>
-          <Link href="/dashboard">
-            <Button variant="outline" size="sm">
-              <Home className="w-4 h-4 mr-2" />
-              Dashboard
-            </Button>
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
