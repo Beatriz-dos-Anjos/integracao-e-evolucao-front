@@ -4,8 +4,7 @@ import { useEffect } from "react"
 import { useAiRecommendations } from "@/hooks/useAiRecommendations"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Brain, RefreshCw, Loader2, AlertTriangle, Lightbulb, TrendingUp, Target, Clock } from "lucide-react"
+import { Brain, RefreshCw, Loader2, Lightbulb, TrendingUp, Target, Clock } from "lucide-react"
 
 interface AiRecommendationsProps {
   userId?: number
