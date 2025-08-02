@@ -100,30 +100,7 @@ export function AiRecommendations({ userId = 1, autoLoad = true, className = "" 
           </div>
         )}
 
-        {error && (
-          <Alert className="border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              <div className="space-y-2">
-                <p className="font-medium">Erro ao carregar recomendações:</p>
-                <p className="text-sm">{error}</p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fetchRecommendations(userId)}
-                    className="h-7 text-xs"
-                  >
-                    Tentar novamente
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={clearError} className="h-7 text-xs">
-                    Dispensar
-                  </Button>
-                </div>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
+        
 
         {hasRecommendations && (
           <div className="space-y-3">
