@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -352,8 +351,8 @@ export default function GraficosPage() {
       console.log(`📡 Calling your backend with tipo: ${tipo}`)
 
       // Call your real backend endpoint that connects to ML API
-      const response = await axios.get("/api/forecast-graph", {
-        params: { tipo: "receita" }
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_ML_API_URL}/analytics/grafico-json`, {
+        params: { tipo }
 
       })
 
@@ -624,7 +623,7 @@ export default function GraficosPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
+                <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Valor do Estoque</CardTitle>
                     <DollarSign className="h-4 w-4" />
@@ -635,7 +634,7 @@ export default function GraficosPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white">
+                <Card className="bg-gradient-to-br bg-purple-600 text-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Alertas</CardTitle>
                     <AlertTriangle className="h-4 w-4" />

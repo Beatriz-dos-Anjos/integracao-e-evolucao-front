@@ -178,7 +178,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-yellow-500 text-white">
+          <Card className="bg-blue-600 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Valor do Estoque</CardTitle>
               <DollarSign className="h-4 w-4" />
@@ -189,7 +189,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-red-500 text-white">
+          <Card className="text-white bg-purple-600">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Alertas</CardTitle>
               <AlertTriangle className="h-4 w-4" />
