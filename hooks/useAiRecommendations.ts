@@ -19,7 +19,7 @@ export function useAiRecommendations() {
     lastUpdated: null,
   })
 
-  const fetchRecommendations = useCallback(async (userId = 3) => {
+  const fetchRecommendations = useCallback(async (userId: number) => {
     setData((prev) => ({ ...prev, loading: true, error: null }))
 
     try {
