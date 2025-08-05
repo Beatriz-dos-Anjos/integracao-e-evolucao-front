@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AiRecommendations } from "@/components/ai-recommendations"
-import { ForecastChart } from "@/components/forecast-chart"
 import { useAuth } from "@/contexts/auth-context"
 
 interface Product {
@@ -220,16 +220,12 @@ export default function RelatoriosPage() {
           </Button>
         </div>
 
-        {/* Grid com Recomendações e Gráficos */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recomendações de IA - Agora usa o contexto automaticamente */}
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           <AiRecommendations />
 
-          {/* Gráfico de Previsão */}
-          <ForecastChart type="receita" />
+         
         </div>
 
-        {/* Produtos mais lucrativos */}
         <Card>
           <CardHeader>
             <CardTitle>Análise de Produtos</CardTitle>
