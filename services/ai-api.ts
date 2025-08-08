@@ -2,11 +2,11 @@ import axios from "axios"
 
 // Configuração da API para o backend Python (FastAPI)
 const aiApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_AI_API_URL || "http://localhost:8001",
+  baseURL: process.env.NEXT_PUBLIC_ML_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000, // 30 segundos timeout para IA
+  timeout: 120000, // 2 minutos timeout para IA (APIs ML podem demorar muito mais)
 })
 
 // Interceptor para adicionar token de autenticação
