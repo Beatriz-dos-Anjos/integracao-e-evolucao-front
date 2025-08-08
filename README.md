@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Integração e Evolução — Frontend
 
-First, run the development server:
+Frontend da aplicação **Integração e Evolução**, uma plataforma de **gestão interna** com controle completo de receitas, despesas, produtos, compras e vendas, gráficos e alertas inteligentes de estoque para qualquer pessoa que sinta necessidade de gerenciar seu comércio, **indo além das vendas!**
+
+Este projeto é construído com **Next.js**, **TypeScript**, **Tailwind CSS**, **NextAuth**, e integra-se a uma API backend com acesso a banco de dados.
+
+---
+
+## 🚀 Funcionalidades
+
+- ✅ Autenticação segura via NextAuth
+- ✅ Cadastro e login de usuários
+- ✅ Registro e gestão de produtos com alertas de estoque
+- ✅ Controle de receitas e despesas
+- ✅ Gerenciamento de compras e vendas
+- ✅ Visualização de dados via gráficos interativos
+- ✅ Integração com API e banco de dados
+
+-----
+
+## ⚙️ Tecnologias Utilizadas
+
+| Categoria           | Ferramenta / Biblioteca        |
+|---------------------|-------------------------------|
+| **Framework**       | [Next.js](https://nextjs.org/) |
+| **Linguagem**       | [TypeScript](https://www.typescriptlang.org/) |
+| **Estilização**     | [Tailwind CSS](https://tailwindcss.com/) |
+| **Autenticação**    | [NextAuth.js](https://next-auth.js.org/) |
+| **HTTP Requests**   | `fetch` e [Axios](https://axios-http.com/) |
+| **Gráficos**        | (ex: [Recharts](https://recharts.org/)) |
+| **Deploy**          | [Vercel](https://vercel.com/) |
+
+---
+
+## 📦 Instalação e uso
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/Beatriz-dos-Anjos/integracao-e-evolucao-front.git
+cd integracao-e-evolucao-front
+```
+
+### 2. Instale as dependências
+
+```bash
+npm install
+# ou
+pnpm add
+```
+
+### 3. Crie o arquivo `.env.local`
+
+```env
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=sua-chave-secreta
+NEXT_PUBLIC_API_URL=http://localhost:4000
+```
+
+### 4. Execute o projeto localmente
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
+# ou
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> Acesse: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🌐 Deploy
 
-## Learn More
+Este projeto está pronto para deploy com **Vercel**.
 
-To learn more about Next.js, take a look at the following resources:
+1. Faça login em https://vercel.com
+2. Conecte seu GitHub e importe o repositório
+3. Configure as variáveis de ambiente no painel
+4. Deploy automático após cada `push` na branch principal
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🤝 Contribuindo
 
-## Deploy on Vercel
+Contribuições são bem-vindas!
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Faça um fork
+2. Crie uma branch: `git checkout -b minha-feature`
+3. Commit: `git commit -m 'feat: minha feature'`
+4. Push: `git push origin minha-feature`
+5. Abra um Pull Request
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+
+## 📬 Contato
+
+Feito com 💙 por
+
+[Antonio Carolino ](https://github.com/AntonioCar0lin0)  
+[Beatriz dos Anjos](https://github.com/Beatriz-dos-Anjos)  
+[Luiza Trigueiro](https://github.com/luizatrigueiro)  
+[Sergio Lira](https://github.com/SergioL1ra)  
+
+
+Contribua, envie sugestões ou abra uma issue!
