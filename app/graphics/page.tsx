@@ -61,9 +61,6 @@ export default function GraficosPage() {
         api.get("/api/transactions?type=despesa").catch(() => ({ data: { transactions: [] } })),
       ])
 
-      console.log("Resposta receitas:", receitasRes.data)
-      console.log("Resposta despesas:", despesasRes.data)
-
       const receitasData = receitasRes.data?.transactions || []
       const despesasData = despesasRes.data?.transactions || []
 
@@ -75,11 +72,9 @@ export default function GraficosPage() {
       receitasData.forEach((receita: any) => {
         const date = new Date(receita.data || receita.createdAt)
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        
         if (!monthlyData.has(monthKey)) {
           monthlyData.set(monthKey, { receitas: 0, despesas: 0 })
         }
-        
         const current = monthlyData.get(monthKey)!
         current.receitas += Number(receita.valor || 0)
       })
@@ -89,11 +84,9 @@ export default function GraficosPage() {
       despesasData.forEach((despesa: any) => {
         const date = new Date(despesa.data || despesa.createdAt)
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        
         if (!monthlyData.has(monthKey)) {
           monthlyData.set(monthKey, { receitas: 0, despesas: 0 })
         }
-        
         const current = monthlyData.get(monthKey)!
         current.despesas += Number(despesa.valor || 0)
       })
@@ -115,10 +108,8 @@ export default function GraficosPage() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-12) // Últimos 12 meses
 
-      console.log("Dados processados:", chartData)
       setFinancialData(chartData)
     } catch (error) {
-      console.error("Erro ao buscar dados financeiros:", error)
       setError(`Erro ao carregar dados financeiros: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     } finally {
       setLoading(false)
@@ -160,8 +151,7 @@ export default function GraficosPage() {
         alerts: lowStockProducts.length,
         lowStockProducts,
       })
-    } catch (error) {
-      console.error("Erro ao buscar dados do dashboard:", error)
+    } catch {
       setDashboardData({
         totalProducts: 0,
         totalCategories: 0,
@@ -312,7 +302,7 @@ export default function GraficosPage() {
                     <strong>Atenção: Estoque Baixo</strong>
                     <div className="mt-2 space-y-1">
                       {dashboardData.lowStockProducts.map((product, index) => (
-                        <div key={index} className="flex justify-between items-center">
+                        <div key={index} className="flex justify-between items-center gap-8">
                           <span>{product.name}</span>
                           <Badge variant="destructive">
                             {product.quantity} restantes (mín: {product.minStock})
