@@ -81,6 +81,48 @@ Este projeto está pronto para deploy com **Vercel**.
 
 ---
 
+## 🔎 Bibliotecas
+
+### Front-End
+- Recharts
+- Lucid React
+- React
+- Lodash
+- Axios
+- Moment
+- Express
+
+### Back-End
+- Axios
+- Bcrypt
+- CORS
+- Dotenv
+- Express
+- Json2csv
+- Jsonwebtoken
+- Morgan
+- Nodemon
+- Pg
+- Sequelize
+
+### ML/API
+- FastAPI
+- Uvicorn
+- SQLAlchemy
+- Psycopg2-binary
+- Pandas
+- NumPy
+- Cython
+- Scikit-learn
+- Statsmodels
+- Plotly
+- Python-dotenv
+- Matplotlib
+- Requests
+- Google-generativeai
+  
+---
+
 ## 🤝 Contribuindo
 
 Contribuições são bem-vindas!
