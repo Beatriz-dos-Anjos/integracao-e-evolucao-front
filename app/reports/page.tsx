@@ -1,37 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useEffect, useState } from "react"
 import api from "@/services/api"
 import Link from "next/link"
-import {
-  Briefcase,
-  TrendingUp,
-  DollarSign,
-  AlertTriangle,
-  Package,
-  BarChart3,
-  FileText,
-  ArrowLeft,
-} from "lucide-react"
-
+import { Briefcase, TrendingUp, DollarSign, AlertTriangle, Package, BarChart3, FileText, ArrowLeft } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AiRecommendations } from "@/components/ai-recommendations"
+import { useAuth } from "@/contexts/auth-context"
 
-export default function RelatoriosPage() {
-  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])
-const [mostProfitableProducts, setMostProfitableProducts] = useState<Product[]>([])
-
-  const [stats, setStats] = useState({ total_produtos: 0, produtos_estoque_baixo: 0 })
-  const [businessMetrics, setBusinessMetrics] = useState({
-    lucro_total: 0,
-    lucro_unitario_medio: 0,
-    ticket_medio: 0,
-    total_itens: 0,
-  })
 interface Product {
   nome: string
   quantidade_estoque: number
@@ -39,9 +20,26 @@ interface Product {
   lucro_total?: string
 }
 
+export default function RelatoriosPage() {
+  const { user, userId, loading: loadingUser } = useAuth()
+  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])
+  const [mostProfitableProducts, setMostProfitableProducts] = useState<Product[]>([])
+  const [stats, setStats] = useState({
+    total_produtos: 0,
+    produtos_estoque_baixo: 0,
+  })
+  const [businessMetrics, setBusinessMetrics] = useState({
+    lucro_total: 0,
+    lucro_unitario_medio: 0,
+    ticket_medio: 0,
+    total_itens: 0,
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Só buscar dados se o usuário estiver carregado e autenticado
+    if (loadingUser || !userId) return
+
     const fetchData = async () => {
       try {
         const [dashboardRes, lucrativeRes] = await Promise.all([
@@ -56,8 +54,17 @@ interface Product {
         setMostProfitableProducts(dashboard.produtos_mais_lucrativos)
         setStats(dashboard.estatisticas)
 
-        const totalLucro = lucrative.reduce((acc: number, p: { lucro_total: string }) => acc + parseFloat(p.lucro_total), 0)
-        const avgLucroUnit = lucrative.reduce((acc: number, p: { lucro_unitario: string }) => acc + parseFloat(p.lucro_unitario), 0) / lucrative.length
+        const totalLucro = lucrative.reduce(
+          (acc: number, p: { lucro_total: string }) => acc + Number.parseFloat(p.lucro_total),
+          0,
+        )
+
+        const avgLucroUnit =
+          lucrative.reduce(
+            (acc: number, p: { lucro_unitario: string }) => acc + Number.parseFloat(p.lucro_unitario),
+            0,
+          ) / lucrative.length
+
         const totalItens = lucrative.reduce((acc: any, p: { quantidade_estoque: any }) => acc + p.quantidade_estoque, 0)
         const ticketMedio = totalItens ? totalLucro / totalItens : 0
 
@@ -75,24 +82,35 @@ interface Product {
     }
 
     fetchData()
-  }, [])
+  }, [userId, loadingUser])
 
-  const recommendations = [
-    {
-      icon: "⚠️",
-      title: "Reabastecer Estoque",
-      description: `${stats.produtos_estoque_baixo} produto(s) com estoque baixo precisam ser reabastecidos.`,
-      color: "yellow",
-    },
+  // Mostrar loading enquanto o usuário está sendo carregado
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
 
-    {
-      icon: "💡",
-      title: "Dica",
-      description: "Considere aumentar o estoque dos produtos com maior margem de lucro.",
-      color: "yellow",
-    },
-  ]
-
+  // Redirecionar se não estiver autenticado
+  if (!userId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Acesso Negado</h2>
+          <p className="text-gray-600 mb-4">Você precisa estar logado para acessar esta página.</p>
+          <Link href="/login">
+            <Button>Fazer Login</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -104,6 +122,11 @@ interface Product {
             <h1 className="text-3xl font-bold text-gray-800">Sistema de Gestão</h1>
           </div>
           <p className="text-gray-600">Controle seu negócio de forma simples e inteligente</p>
+          {user && (
+            <p className="text-sm text-gray-500">
+              Relatórios para: <strong>{user.nome}</strong>
+            </p>
+          )}
         </div>
 
         {/* Dashboard Cards */}
@@ -154,20 +177,22 @@ interface Product {
         </div>
 
         {/* Estoque baixo */}
-        <Alert className="border-red-200 bg-red-50">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
-            <strong>Atenção: Estoque Baixo</strong>
-            <div className="mt-2 space-y-1">
-              {lowStockProducts.map((product, index) => (
-                <div key={index} className="flex justify-between items-center gap-8">
-                  <span>{product.nome}</span>
-                  <Badge variant="destructive">{product.quantidade_estoque} restantes</Badge>
-                </div>
-              ))}
-            </div>
-          </AlertDescription>
-        </Alert>
+        {lowStockProducts.length > 0 && (
+          <Alert className="border-red-200 bg-red-50">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              <strong>Atenção: Estoque Baixo</strong>
+              <div className="mt-2 space-y-1">
+                {lowStockProducts.map((product, index) => (
+                  <div key={index} className="flex justify-between items-center gap-8">
+                    <span>{product.nome}</span>
+                    <Badge variant="destructive">{product.quantidade_estoque} restantes</Badge>
+                  </div>
+                ))}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Navegação */}
         <div className="flex gap-1 bg-white p-1 rounded-lg border">
@@ -195,7 +220,12 @@ interface Product {
           </Button>
         </div>
 
-        {/* Produtos mais lucrativos */}
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+          <AiRecommendations />
+
+         
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle>Análise de Produtos</CardTitle>
@@ -219,55 +249,6 @@ interface Product {
           </CardContent>
         </Card>
 
-        {/* Recomendações */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-yellow-600">Recomendações</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recommendations.map((rec, index) => (
-                <div
-                  key={index}
-                  className={`flex items-start gap-3 p-3 rounded-lg ${
-                    rec.color === "yellow"
-                      ? "bg-yellow-50 border border-yellow-200"
-                      : rec.color === "green"
-                      ? "bg-green-50 border border-green-200"
-                      : "bg-blue-50 border border-blue-200"
-                  }`}
-                >
-                  <div className="text-xl">{rec.icon}</div>
-                  <div className="flex-1">
-                    <h5
-                      className={`font-medium ${
-                        rec.color === "yellow"
-                          ? "text-yellow-800"
-                          : rec.color === "green"
-                          ? "text-green-800"
-                          : "text-blue-800"
-                      }`}
-                    >
-                      {rec.title}
-                    </h5>
-                    <p
-                      className={`text-sm ${
-                        rec.color === "yellow"
-                          ? "text-yellow-700"
-                          : rec.color === "green"
-                          ? "text-green-700"
-                          : "text-blue-700"
-                      }`}
-                    >
-                      {rec.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Métricas do negócio */}
         <Card>
           <CardHeader>
@@ -282,9 +263,7 @@ interface Product {
                 <div className="text-sm text-gray-600 mt-1">Lucro Médio por Produto</div>
               </div>
               <div className="bg-gray-100 p-6 rounded-lg text-center">
-                <div className="text-3xl font-bold text-gray-800">
-                  R$ {businessMetrics.ticket_medio.toFixed(2)}
-                </div>
+                <div className="text-3xl font-bold text-gray-800">R$ {businessMetrics.ticket_medio.toFixed(2)}</div>
                 <div className="text-sm text-gray-600 mt-1">Ticket Médio</div>
               </div>
               <div className="bg-gray-100 p-6 rounded-lg text-center">
