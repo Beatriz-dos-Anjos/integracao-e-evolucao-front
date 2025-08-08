@@ -1,592 +1,562 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Progress } from "@/components/ui/progress"
+import { Briefcase, TrendingUp, DollarSign, AlertTriangle, Package, BarChart3, ArrowLeft, Loader2, RefreshCw, Activity, TrendingDown } from 'lucide-react'
 import {
-  Briefcase,
-  TrendingUp,
-  DollarSign,
-  AlertTriangle,
-  Package,
-  BarChart3,
-  FileText,
-  ArrowLeft,
-  Brain,
-  Loader2,
-  Target,
-  Lightbulb,
-} from "lucide-react"
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts"
+import api from "@/services/api"
+import { useRouter } from "next/navigation"
 
-// Dados históricos reais para análise
-const historicalData = [
-  { date: "15/06", receitas: 110, despesas: 85, lucro: 25, vendas: 12 },
-  { date: "16/06", receitas: 105, despesas: 75, lucro: 30, vendas: 10 },
-  { date: "17/06", receitas: 135, despesas: 95, lucro: 40, vendas: 15 },
-  { date: "18/06", receitas: 165, despesas: 110, lucro: 55, vendas: 18 },
-  { date: "19/06", receitas: 185, despesas: 115, lucro: 70, vendas: 22 },
-  { date: "20/06", receitas: 155, despesas: 105, lucro: 50, vendas: 16 },
-  { date: "21/06", receitas: 210, despesas: 125, lucro: 85, vendas: 25 },
-  { date: "22/06", receitas: 175, despesas: 108, lucro: 67, vendas: 20 },
-  { date: "23/06", receitas: 195, despesas: 112, lucro: 83, vendas: 23 },
-  { date: "24/06", receitas: 220, despesas: 118, lucro: 102, vendas: 28 },
-]
-
-interface AIInsight {
-  type: "trend" | "prediction" | "recommendation" | "alert"
-  title: string
-  description: string
-  confidence: number
-  impact: "high" | "medium" | "low"
-}
-
-interface PredictionData {
+interface FinancialData {
   date: string
   receitas: number
   despesas: number
   lucro: number
-  confidence: number
+  periodo: string
+}
+
+interface DashboardStats {
+  totalProducts: number
+  totalCategories: number
+  monthlyProfit: number
+  profitMargin: number
+  stockValue: number
+  alerts: number
+  lowStockProducts: { name: string; quantity: number; minStock: number }[]
 }
 
 export default function GraficosPage() {
-  const [activeTab, setActiveTab] = useState("financeiro")
-  const [aiInsights, setAiInsights] = useState<AIInsight[]>([])
-  const [predictions, setPredictions] = useState<PredictionData[]>([])
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisComplete, setAnalysisComplete] = useState(false)
+  const [financialData, setFinancialData] = useState<FinancialData[]>([])
+  const [dashboardData, setDashboardData] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingDashboard, setLoadingDashboard] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  // Mock data para o dashboard
-  const mockData = {
-    totalProducts: 60,
-    totalCategories: 3,
-    monthlyProfit: 70.0,
-    profitMargin: 60.9,
-    stockValue: 127.5,
-    alerts: 1,
-    lowStockProducts: [{ name: "Água Mineral", quantity: 5, minStock: 15 }],
-  }
-
-  // Função para análise de IA dos dados
-  const analyzeWithAI = async () => {
-    setIsAnalyzing(true)
-
+  const fetchFinancialData = useCallback(async () => {
+    setLoading(true)
+    setError(null)
     try {
-      // Simular análise de IA (em produção usaria o AI SDK real)
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // Buscar transações separadas por tipo (receitas e despesas)
+      const [receitasRes, despesasRes] = await Promise.all([
+        api.get("/api/transactions?type=receita").catch(() => ({ data: { transactions: [] } })),
+        api.get("/api/transactions?type=despesa").catch(() => ({ data: { transactions: [] } })),
+      ])
 
-      // Análise de tendências - remover profitGrowth não usado
-      const revenueGrowth = calculateGrowthRate(historicalData.map((d) => d.receitas))
-      const expenseGrowth = calculateGrowthRate(historicalData.map((d) => d.despesas))
+      const receitasData = receitasRes.data?.transactions || []
+      const despesasData = despesasRes.data?.transactions || []
 
-      // Gerar insights baseados na análise
-      const insights: AIInsight[] = [
-        {
-          type: "trend",
-          title: "Tendência de Crescimento Positiva",
-          description: `Suas receitas cresceram ${revenueGrowth.toFixed(1)}% no período analisado. Tendência consistente de alta.`,
-          confidence: 92,
-          impact: "high",
-        },
-        {
-          type: "alert",
-          title: "Aumento nas Despesas",
-          description: `Despesas aumentaram ${expenseGrowth.toFixed(1)}%. Monitore custos operacionais.`,
-          confidence: 87,
-          impact: "medium",
-        },
-        {
-          type: "prediction",
-          title: "Projeção para Próximos 5 Dias",
-          description: `Baseado nos padrões identificados, espera-se receita média de R$ ${predictNextValue(historicalData.map((d) => d.receitas)).toFixed(2)}.`,
-          confidence: 78,
-          impact: "high",
-        },
-        {
-          type: "recommendation",
-          title: "Otimização de Margem",
-          description: "Identifiquei oportunidade de aumentar margem em 15% otimizando custos variáveis.",
-          confidence: 85,
-          impact: "high",
-        },
-      ]
+      // Agrupar dados por mês
+      const monthlyData = new Map<string, { receitas: number; despesas: number }>()
 
-      setAiInsights(insights)
-
-      // Gerar previsões para os próximos 5 dias
-      const futurePredictions: PredictionData[] = []
-      for (let i = 1; i <= 5; i++) {
-        const baseDate = new Date(2025, 5, 24 + i)
-        futurePredictions.push({
-          date: `${baseDate.getDate().toString().padStart(2, "0")}/06`,
-          receitas: predictNextValue(historicalData.map((d) => d.receitas)) + (Math.random() - 0.5) * 20,
-          despesas: predictNextValue(historicalData.map((d) => d.despesas)) + (Math.random() - 0.5) * 15,
-          lucro: 0,
-          confidence: Math.max(60, 90 - i * 5),
-        })
-      }
-
-      futurePredictions.forEach((pred) => {
-        pred.lucro = pred.receitas - pred.despesas
+      // Processar receitas
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      receitasData.forEach((receita: any) => {
+        const date = new Date(receita.data || receita.createdAt)
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        if (!monthlyData.has(monthKey)) {
+          monthlyData.set(monthKey, { receitas: 0, despesas: 0 })
+        }
+        const current = monthlyData.get(monthKey)!
+        current.receitas += Number(receita.valor || 0)
       })
 
-      setPredictions(futurePredictions)
-      setAnalysisComplete(true)
-    } catch (error) {
-      console.error("Erro na análise de IA:", error)
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }
+      // Processar despesas
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      despesasData.forEach((despesa: any) => {
+        const date = new Date(despesa.data || despesa.createdAt)
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        if (!monthlyData.has(monthKey)) {
+          monthlyData.set(monthKey, { receitas: 0, despesas: 0 })
+        }
+        const current = monthlyData.get(monthKey)!
+        current.despesas += Number(despesa.valor || 0)
+      })
 
-  // Função para calcular taxa de crescimento
-  const calculateGrowthRate = (values: number[]): number => {
-    if (values.length < 2) return 0
-    const first = values[0]
-    const last = values[values.length - 1]
-    return ((last - first) / first) * 100
-  }
-
-  // Função para prever próximo valor usando regressão linear simples
-  const predictNextValue = (values: number[]): number => {
-    const n = values.length
-    const x = Array.from({ length: n }, (_, i) => i)
-    const y = values
-
-    const sumX = x.reduce((a, b) => a + b, 0)
-    const sumY = y.reduce((a, b) => a + b, 0)
-    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0)
-    const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0)
-
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX)
-    const intercept = (sumY - slope * sumX) / n
-
-    return slope * n + intercept
-  }
-
-  // Executar análise automaticamente com dependência correta
-  useEffect(() => {
-    analyzeWithAI()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Função para renderizar o gráfico com previsões
-  const renderEnhancedChart = () => {
-    const allData = [...historicalData, ...predictions]
-    const maxValue = Math.max(...allData.map((d) => Math.max(d.receitas, d.despesas, d.lucro)))
-    const chartHeight = 300
-    const chartWidth = 1000
-    const padding = 40
-
-    const xStep = (chartWidth - padding * 2) / (allData.length - 1)
-    const yScale = (chartHeight - padding * 2) / maxValue
-
-    const createPath = (dataKey: "receitas" | "despesas" | "lucro", isPrediction = false) => {
-      const dataToUse = isPrediction ? allData : historicalData
-      return dataToUse
-        .map((point, index) => {
-          const x = padding + index * xStep
-          const y = chartHeight - padding - point[dataKey] * yScale
-          return `${index === 0 ? "M" : "L"} ${x} ${y}`
+      // Converter para array e ordenar por data
+      const chartData: FinancialData[] = Array.from(monthlyData.entries())
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map(([monthKey, data]: [string, any]) => {
+          const [year, month] = monthKey.split('-')
+          const date = new Date(Number(year), Number(month) - 1)
+          return {
+            date: monthKey,
+            periodo: date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }),
+            receitas: data.receitas,
+            despesas: data.despesas,
+            lucro: data.receitas - data.despesas,
+          }
         })
-        .join(" ")
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-12) // Últimos 12 meses
+
+      setFinancialData(chartData)
+    } catch (error) {
+      setError(`Erro ao carregar dados financeiros: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
-    return (
-      <div className="w-full overflow-x-auto">
-        <svg width={chartWidth} height={chartHeight} className="border rounded">
-          {/* Grid lines */}
-          {Array.from({ length: 6 }, (_, i) => i * (maxValue / 5)).map((value) => (
-            <g key={value}>
-              <line
-                x1={padding}
-                y1={chartHeight - padding - value * yScale}
-                x2={chartWidth - padding}
-                y2={chartHeight - padding - value * yScale}
-                stroke="#f0f0f0"
-                strokeWidth="1"
-              />
-              <text
-                x={padding - 10}
-                y={chartHeight - padding - value * yScale + 5}
-                fontSize="12"
-                fill="#666"
-                textAnchor="end"
-              >
-                R$ {Math.round(value)}
-              </text>
-            </g>
+  const fetchDashboardData = useCallback(async () => {
+    setLoadingDashboard(true)
+    try {
+      const [productsRes, summaryRes] = await Promise.all([
+        api.get("/products").catch(() => ({ data: [] })),
+        api.get("/api/dashboard/summary").catch(() => ({ data: { summary: {} } })),
+      ])
+
+      const productsData = Array.isArray(productsRes.data) ? productsRes.data : []
+      const summaryData = summaryRes.data?.summary || {}
+
+      const lowStockProducts = productsData
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((p: any) => p.quantidade_estoque < (p.min_estoque || 10))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((p: any) => ({
+          name: p.nome,
+          quantity: p.quantidade_estoque,
+          minStock: p.min_estoque || 10,
+        }))
+
+      setDashboardData({
+        totalProducts: productsData.length,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        totalCategories: new Set(productsData.map((p: any) => p.categoria)).size,
+        monthlyProfit: summaryData.profit || 0,
+        profitMargin: summaryData.profitMargin || 0,
+        stockValue: productsData.reduce(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (acc: number, p: any) => acc + (p.quantidade_estoque || 0) * (p.preco_compra || 0),
+          0
+        ),
+        alerts: lowStockProducts.length,
+        lowStockProducts,
+      })
+    } catch {
+      setDashboardData({
+        totalProducts: 0,
+        totalCategories: 0,
+        monthlyProfit: 0,
+        profitMargin: 0,
+        stockValue: 0,
+        alerts: 0,
+        lowStockProducts: [],
+      })
+    } finally {
+      setLoadingDashboard(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchDashboardData()
+    fetchFinancialData()
+  }, [fetchDashboardData, fetchFinancialData])
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border rounded-lg shadow-lg">
+          <p className="font-medium">{label}</p>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {`${entry.dataKey === 'receitas' ? 'Receitas' : 
+                 entry.dataKey === 'despesas' ? 'Despesas' : 'Lucro'}: R$ ${entry.value?.toFixed(2)}`}
+            </p>
           ))}
-
-          {/* Linha vertical separando histórico de previsão */}
-          <line
-            x1={padding + (historicalData.length - 1) * xStep}
-            y1={padding}
-            x2={padding + (historicalData.length - 1) * xStep}
-            y2={chartHeight - padding}
-            stroke="#ddd"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-          />
-
-          {/* X-axis labels */}
-          {allData.map((point, index) => (
-            <text
-              key={point.date}
-              x={padding + index * xStep}
-              y={chartHeight - 10}
-              fontSize="12"
-              fill={index >= historicalData.length ? "#999" : "#666"}
-              textAnchor="middle"
-            >
-              {point.date}
-            </text>
-          ))}
-
-          {/* Linhas históricas */}
-          <path d={createPath("receitas")} fill="none" stroke="#14b8a6" strokeWidth="2" />
-          <path d={createPath("despesas")} fill="none" stroke="#f97316" strokeWidth="2" />
-          <path d={createPath("lucro")} fill="none" stroke="#374151" strokeWidth="2" />
-
-          {/* Linhas de previsão (tracejadas) */}
-          <path
-            d={createPath("receitas", true)}
-            fill="none"
-            stroke="#14b8a6"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-            opacity="0.7"
-          />
-          <path
-            d={createPath("despesas", true)}
-            fill="none"
-            stroke="#f97316"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-            opacity="0.7"
-          />
-          <path
-            d={createPath("lucro", true)}
-            fill="none"
-            stroke="#374151"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-            opacity="0.7"
-          />
-
-          {/* Data points históricos */}
-          {historicalData.map((point, index) => {
-            const x = padding + index * xStep
-            return (
-              <g key={point.date}>
-                <circle cx={x} cy={chartHeight - padding - point.receitas * yScale} r="4" fill="#14b8a6" />
-                <circle cx={x} cy={chartHeight - padding - point.despesas * yScale} r="4" fill="#f97316" />
-                <circle cx={x} cy={chartHeight - padding - point.lucro * yScale} r="4" fill="#374151" />
-              </g>
-            )
-          })}
-
-          {/* Data points previstos (menores) */}
-          {predictions.map((point, index) => {
-            const x = padding + (historicalData.length + index) * xStep
-            return (
-              <g key={point.date}>
-                <circle
-                  cx={x}
-                  cy={chartHeight - padding - point.receitas * yScale}
-                  r="3"
-                  fill="#14b8a6"
-                  opacity="0.7"
-                />
-                <circle
-                  cx={x}
-                  cy={chartHeight - padding - point.despesas * yScale}
-                  r="3"
-                  fill="#f97316"
-                  opacity="0.7"
-                />
-                <circle cx={x} cy={chartHeight - padding - point.lucro * yScale} r="3" fill="#374151" opacity="0.7" />
-              </g>
-            )
-          })}
-        </svg>
-
-        {/* Legend */}
-        <div className="flex justify-center gap-6 mt-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-teal-500 rounded-full"></div>
-            <span className="text-sm text-teal-600">Receitas</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-            <span className="text-sm text-orange-600">Despesas</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-gray-600 rounded-full"></div>
-            <span className="text-sm text-gray-600">Lucro</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-0.5 bg-gray-400 border-dashed"></div>
-            <span className="text-sm text-gray-500">Previsão IA</span>
-          </div>
         </div>
-      </div>
-    )
+      )
+    }
+    return null
   }
+
+  const totalReceitas = financialData.reduce((acc, item) => acc + item.receitas, 0)
+  const totalDespesas = financialData.reduce((acc, item) => acc + item.despesas, 0)
+  const totalLucro = totalReceitas - totalDespesas
+  const crescimentoReceitas = financialData.length > 1 
+    ? ((financialData[financialData.length - 1]?.receitas || 0) / (financialData[0]?.receitas || 1) - 1) * 100
+    : 0
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Navigation */}
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar
+          </Button>
+          <Link href="/dashboard">
+            <Button variant="outline" size="sm">
+              <Briefcase className="w-4 h-4 mr-2" />
+              Dashboard
+            </Button>
+          </Link>
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
-            <Briefcase className="w-8 h-8 text-amber-600" />
-            <h1 className="text-3xl font-bold text-gray-800">Sistema de Gestão</h1>
+            <BarChart3 className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-800">Análise Financeira</h1>
           </div>
-          <p className="text-gray-600">Controle seu negócio de forma simples e inteligente</p>
+          <p className="text-gray-600">
+            Visualização de receitas e despesas baseada nos dados do sistema
+          </p>
         </div>
 
         {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-slate-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Produtos</CardTitle>
-              <Package className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{mockData.totalProducts}</div>
-              <p className="text-xs text-slate-200">{mockData.totalCategories} tipos diferentes</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-teal-600 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Lucro do Mês</CardTitle>
-              <TrendingUp className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">R$ {mockData.monthlyProfit.toFixed(2)}</div>
-              <p className="text-xs text-teal-200">+{mockData.profitMargin}% margem</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-yellow-500 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Valor do Estoque</CardTitle>
-              <DollarSign className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">R$ {mockData.stockValue.toFixed(2)}</div>
-              <p className="text-xs text-yellow-200">Investimento atual</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-red-500 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Alertas</CardTitle>
-              <AlertTriangle className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{mockData.alerts}</div>
-              <p className="text-xs text-red-200">Produtos com estoque baixo</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Low Stock Alert */}
-        <Alert className="border-red-200 bg-red-50">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
-            <strong>Atenção: Estoque Baixo</strong>
-            <div className="mt-2 space-y-1">
-              {mockData.lowStockProducts.map((product, index) => (
-                <div key={index} className="flex justify-between items-center gap-8">
-                  <span>{product.name}</span>
-                  <Badge variant="destructive">
-                    {product.quantity} restantes (mín: {product.minStock})
-                  </Badge>
-                </div>
+        {loadingDashboard ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array(4)
+              .fill(0)
+              .map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/4 mt-2"></div>
+                  </CardContent>
+                </Card>
               ))}
-            </div>
-          </AlertDescription>
-        </Alert>
-
-        {/* AI Analysis Status */}
-        {isAnalyzing && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="flex items-center gap-3 p-4">
-              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-              <div>
-                <h4 className="font-medium text-blue-800">Analisando dados com IA...</h4>
-                <p className="text-sm text-blue-600">Identificando padrões e gerando insights automáticos</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* AI Insights */}
-        {analysisComplete && aiInsights.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {aiInsights.map((insight, index) => (
-              <Card
-                key={index}
-                className={`border-l-4 ${
-                  insight.type === "trend"
-                    ? "border-l-green-500 bg-green-50"
-                    : insight.type === "alert"
-                      ? "border-l-red-500 bg-red-50"
-                      : insight.type === "prediction"
-                        ? "border-l-blue-500 bg-blue-50"
-                        : "border-l-purple-500 bg-purple-50"
-                }`}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    {insight.type === "trend" && <TrendingUp className="w-4 h-4 text-green-600" />}
-                    {insight.type === "alert" && <AlertTriangle className="w-4 h-4 text-red-600" />}
-                    {insight.type === "prediction" && <Brain className="w-4 h-4 text-blue-600" />}
-                    {insight.type === "recommendation" && <Lightbulb className="w-4 h-4 text-purple-600" />}
-                    {insight.title}
-                    <Badge variant="outline" className="ml-auto">
-                      {insight.confidence}% confiança
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-700">{insight.description}</p>
-                </CardContent>
-              </Card>
-            ))}
           </div>
-        )}
+        ) : (
+          dashboardData && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="bg-gradient-to-br from-slate-600 to-slate-700 text-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total de Produtos</CardTitle>
+                    <Package className="h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{dashboardData.totalProducts}</div>
+                    <p className="text-xs text-slate-200">{dashboardData.totalCategories} categorias</p>
+                  </CardContent>
+                </Card>
 
-        {/* Navigation Tabs */}
-        <div className="flex gap-1 bg-white p-1 rounded-lg border">
-          <Link href="/inventory">
-            <Button variant="ghost" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              Estoque
-            </Button>
-          </Link>
-          <Link href="/finances">
-            <Button variant="ghost" className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
-              Financeiro
-            </Button>
-          </Link>
-          <Button className="flex items-center gap-2 bg-slate-600 text-white">
-            <BarChart3 className="w-4 h-4" />
-            Gráficos
-          </Button>
-          <Link href="/reports">
-            <Button variant="ghost" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Relatórios
-            </Button>
-          </Link>
-        </div>
+                <Card className="bg-gradient-to-br from-teal-600 to-teal-700 text-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Receitas Totais</CardTitle>
+                    <TrendingUp className="h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">R$ {totalReceitas.toFixed(2)}</div>
+                    <p className="text-xs text-teal-200">
+                      {crescimentoReceitas > 0 ? '+' : ''}{crescimentoReceitas.toFixed(1)}% crescimento
+                    </p>
+                  </CardContent>
+                </Card>
 
-        {/* Charts Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="w-5 h-5 text-blue-600" />
-              Análise de Séries Temporais com IA
-              {analysisComplete && <Badge className="bg-green-100 text-green-800">IA Ativa</Badge>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Chart Navigation */}
-            <div className="flex gap-1 mb-6">
-              <Button
-                onClick={() => setActiveTab("financeiro")}
-                className={`${
-                  activeTab === "financeiro" ? "bg-slate-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Financeiro
-              </Button>
-              <Button
-                onClick={() => setActiveTab("vendas")}
-                className={`${
-                  activeTab === "vendas" ? "bg-slate-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Vendas
-              </Button>
-              <Button
-                onClick={() => setActiveTab("comparativo")}
-                className={`${
-                  activeTab === "comparativo"
-                    ? "bg-slate-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Comparativo
-              </Button>
-            </div>
+                <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Despesas Totais</CardTitle>
+                    <TrendingDown className="h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">R$ {totalDespesas.toFixed(2)}</div>
+                    <p className="text-xs text-blue-200">Últimos 12 meses</p>
+                  </CardContent>
+                </Card>
 
-            {/* Chart Content */}
-            {activeTab === "financeiro" && (
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Evolução Financeira com Previsões IA</h3>
-                  <Button onClick={analyzeWithAI} disabled={isAnalyzing} size="sm">
-                    {isAnalyzing ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Brain className="w-4 h-4 mr-2" />
-                    )}
-                    Reanalizar
-                  </Button>
-                </div>
-                {renderEnhancedChart()}
+                <Card className="bg-gradient-to-br from-purple-600 to-purple-700 text-white">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Lucro Total</CardTitle>
+                    <DollarSign className="h-4 w-4" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">R$ {totalLucro.toFixed(2)}</div>
+                    <p className="text-xs text-purple-200">
+                      {totalReceitas > 0 ? ((totalLucro / totalReceitas) * 100).toFixed(1) : '0.0'}% margem
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
 
-                {predictions.length > 0 && (
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">Previsões para os Próximos 5 Dias:</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
-                      {predictions.map((pred, index) => (
-                        <div key={index} className="bg-white p-2 rounded border">
-                          <div className="font-medium">{pred.date}</div>
-                          <div className="text-teal-600">R$ {pred.receitas.toFixed(0)}</div>
-                          <div className="text-xs text-gray-500">{pred.confidence}% confiança</div>
+              {dashboardData.lowStockProducts.length > 0 && (
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    <strong>Atenção: Estoque Baixo</strong>
+                    <div className="mt-2 space-y-1">
+                      {dashboardData.lowStockProducts.map((product, index) => (
+                        <div key={index} className="flex justify-between items-center gap-8">
+                          <span>{product.name}</span>
+                          <Badge variant="destructive">
+                            {product.quantity} restantes (mín: {product.minStock})
+                          </Badge>
                         </div>
                       ))}
                     </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
+          )
+        )}
+
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Main Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Gráfico de Linha - Evolução Temporal */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-600" />
+                  Evolução Mensal
+                </CardTitle>
+                <Button onClick={fetchFinancialData} disabled={loading} size="sm">
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                  )}
+                  {loading ? "Carregando..." : "Atualizar"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-80 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : financialData.length > 0 ? (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={financialData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="periodo" />
+                      <YAxis tickFormatter={(value) => `R$ ${value.toLocaleString()}`} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="receitas"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        name="Receitas"
+                        dot={{ fill: "#10b981", strokeWidth: 2, r: 4 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="despesas"
+                        stroke="#f59e0b"
+                        strokeWidth={3}
+                        name="Despesas"
+                        dot={{ fill: "#f59e0b", strokeWidth: 2, r: 4 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="lucro"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        name="Lucro"
+                        dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-80 flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-4" />
+                    <p>Nenhum dado financeiro encontrado</p>
+                    <p className="text-sm">Adicione receitas e despesas para ver os gráficos</p>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-            {activeTab === "vendas" && (
-              <div className="text-center py-12">
-                <BarChart3 className="w-16 h-16 mx-auto text-blue-600 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Análise de Vendas com IA</h3>
-                <p className="text-gray-600">Análise preditiva de vendas por produto e sazonalidade.</p>
-              </div>
-            )}
+          {/* Gráfico de Barras - Comparativo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-purple-600" />
+                Comparativo Mensal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-80 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+                </div>
+              ) : financialData.length > 0 ? (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={financialData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="periodo" />
+                      <YAxis tickFormatter={(value) => `R$ ${value.toLocaleString()}`} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar dataKey="receitas" fill="#10b981" name="Receitas" />
+                      <Bar dataKey="despesas" fill="#f59e0b" name="Despesas" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-80 flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-4" />
+                    <p>Nenhum dado para comparação</p>
+                    <p className="text-sm">Dados aparecerão conforme você adicionar transações</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-            {activeTab === "comparativo" && (
-              <div className="text-center py-12">
-                <Target className="w-16 h-16 mx-auto text-purple-600 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Análise Comparativa Inteligente</h3>
-                <p className="text-gray-600">Compare períodos e identifique oportunidades com IA.</p>
+        {/* Gráfico de Área - Visão Geral */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-600" />
+              Visão Geral - Receitas vs Despesas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="h-96 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+              </div>
+            ) : financialData.length > 0 ? (
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={financialData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="periodo" />
+                    <YAxis tickFormatter={(value) => `R$ ${value.toLocaleString()}`} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Area
+                      type="monotone"
+                      dataKey="receitas"
+                      stackId="1"
+                      stroke="#10b981"
+                      fill="#10b981"
+                      fillOpacity={0.6}
+                      name="Receitas"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="despesas"
+                      stackId="2"
+                      stroke="#f59e0b"
+                      fill="#f59e0b"
+                      fillOpacity={0.6}
+                      name="Despesas"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-96 flex items-center justify-center text-gray-500">
+                <div className="text-center">
+                  <TrendingUp className="w-12 h-12 mx-auto mb-4" />
+                  <p>Aguardando dados financeiros</p>
+                  <p className="text-sm">Os gráficos aparecerão quando houver dados de receitas e despesas</p>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between">
-          <Link href="/dashboard">
-            <Button variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Dashboard
-            </Button>
-          </Link>
-        </div>
+        {/* Resumo Estatístico */}
+        {financialData.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Média Mensal - Receitas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  R$ {(totalReceitas / financialData.length).toFixed(2)}
+                </div>
+                <Progress 
+                  value={Math.min((totalReceitas / financialData.length) / 10000 * 100, 100)} 
+                  className="mt-2" 
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Média Mensal - Despesas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  R$ {(totalDespesas / financialData.length).toFixed(2)}
+                </div>
+                <Progress 
+                  value={Math.min((totalDespesas / financialData.length) / 10000 * 100, 100)} 
+                  className="mt-2" 
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Melhor Mês</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {financialData.reduce((best, current) => 
+                    current.lucro > best.lucro ? current : best
+                  ).periodo}
+                </div>
+                <p className="text-xs text-gray-600">
+                  R$ {financialData.reduce((best, current) => 
+                    current.lucro > best.lucro ? current : best
+                  ).lucro.toFixed(2)} lucro
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Eficiência</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">
+                  {totalReceitas > 0 ? ((totalLucro / totalReceitas) * 100).toFixed(1) : '0.0'}%
+                </div>
+                <p className="text-xs text-gray-600">Margem de lucro geral</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   )
